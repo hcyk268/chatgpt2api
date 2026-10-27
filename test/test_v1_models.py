@@ -63,13 +63,13 @@ class ModelListTests(unittest.TestCase):
         self.assertNotIn("plus-codex-gpt-image-2", ids)
 
     def test_list_models_function(self):
-        """测试直接调用服务层获取模型列表。"""
+        """Test fetching model list via service layer directly."""
         result = openai_v1_models.list_models()
         print("function result:")
         print(json.dumps(result, ensure_ascii=False, indent=2))
 
     def test_list_models_http(self):
-        """测试通过 HTTP 接口获取模型列表。"""
+        """Test fetching model list via HTTP endpoint."""
         response = requests.get(
             f"{BASE_URL}/v1/models",
             headers={"Authorization": f"Bearer {AUTH_KEY}"},

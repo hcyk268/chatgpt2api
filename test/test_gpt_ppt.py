@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 BASE_URL = "http://127.0.0.1:8000"
-PROMPT = "生成一份 2026 年 Q2 电商运营复盘 PPT，8 页以内，商务科技风，包含销售、用户、渠道、广告、618 活动和 Q3 规划。"
+PROMPT = "Create a Q2 2026 e-commerce operations review PPT, up to 8 slides, business tech style, covering sales, users, channels, ads, 618 campaign, and Q3 plan."
 BASE64_IMAGES: list[str] = []
 TIMEOUT_SECS = 600
 POLL_INTERVAL_SECS = 5

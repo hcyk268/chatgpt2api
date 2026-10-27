@@ -11,33 +11,33 @@ from services.storage.json_storage import JSONStorageBackend
 
 def create_storage_backend(data_dir: Path) -> StorageBackend:
     """
-    根据环境变量创建存储后端
-    
-    环境变量：
-    - STORAGE_BACKEND: json|sqlite|postgres|git (默认 json)
-    - DATABASE_URL: 数据库连接字符串 (用于 sqlite/postgres)
-    - GIT_REPO_URL: Git 仓库地址 (用于 git)
-    - GIT_TOKEN: Git 访问令牌 (用于 git)
-    - GIT_BRANCH: Git 分支 (默认 main)
-    - GIT_FILE_PATH: Git 仓库中的文件路径 (默认 accounts.json)
+    Create a storage backend from environment variables.
+
+    Environment variables:
+    - STORAGE_BACKEND: json|sqlite|postgres|git (default json)
+    - DATABASE_URL: database connection string (for sqlite/postgres)
+    - GIT_REPO_URL: Git repository URL (for git)
+    - GIT_TOKEN: Git access token (for git)
+    - GIT_BRANCH: Git branch (default main)
+    - GIT_FILE_PATH: file path inside the Git repo (default accounts.json)
     """
     backend_type = os.getenv("STORAGE_BACKEND", "json").lower().strip()
     
     print(f"[storage] Initializing storage backend: {backend_type}")
     
     if backend_type == "json":
-        # 本地 JSON 文件存储
+        # Local JSON file storage
         file_path = data_dir / "accounts.json"
         auth_keys_path = data_dir / "auth_keys.json"
         print(f"[storage] Using JSON storage: {file_path}")
         return JSONStorageBackend(file_path, auth_keys_path)
     
     elif backend_type in ("sqlite", "postgres", "postgresql", "mysql", "database"):
-        # 数据库存储
+        # Database storage
         database_url = os.getenv("DATABASE_URL", "").strip()
         
         if not database_url:
-            # 如果没有指定 DATABASE_URL，使用本地 SQLite
+            # Use local SQLite when DATABASE_URL is not set
             database_url = f"sqlite:///{data_dir / 'accounts.db'}"
             print(f"[storage] No DATABASE_URL provided, using local SQLite: {database_url}")
         else:
@@ -46,7 +46,7 @@ def create_storage_backend(data_dir: Path) -> StorageBackend:
         return DatabaseStorageBackend(database_url)
     
     elif backend_type == "git":
-        # Git 仓库存储
+        # Git repository storage
         repo_url = os.getenv("GIT_REPO_URL", "").strip()
         token = os.getenv("GIT_TOKEN", "").strip()
         branch = os.getenv("GIT_BRANCH", "main").strip()
@@ -79,7 +79,7 @@ def create_storage_backend(data_dir: Path) -> StorageBackend:
 
 
 def _mask_password(url: str) -> str:
-    """隐藏数据库连接字符串中的密码"""
+    """Mask the password in a database connection string."""
     if "://" not in url:
         return url
     try:
@@ -95,7 +95,7 @@ def _mask_password(url: str) -> str:
 
 
 def _mask_token(url: str) -> str:
-    """隐藏 URL 中的 token"""
+    """Mask the token embedded in a URL."""
     if "@" in url and "://" in url:
         protocol, rest = url.split("://", 1)
         if "@" in rest:

@@ -110,12 +110,12 @@ class Sub2APIImportRequest(BaseModel):
 
 
 class OAuthLoginStartRequest(BaseModel):
-    """起始 OAuth 桥。email_hint 可选，仅用于让 OpenAI 登录页预填邮箱。"""
+    """Start OAuth bridge; optional email_hint pre-fills the OpenAI login page."""
     email_hint: str = ""
 
 
 class OAuthLoginFinishRequest(BaseModel):
-    """提交 callback。callback 既可以是完整 URL 也可以只填 code。"""
+    """Submit callback; callback may be a full URL or the authorization code alone."""
     session_id: str = ""
     callback: str = ""
 
@@ -191,20 +191,20 @@ def create_router() -> APIRouter:
             if value is not None
         }
         if not updates:
-            raise HTTPException(status_code=400, detail={"error": "还没有检测到改动，请修改后再保存"})
+            raise HTTPException(status_code=400, detail={"error": "No changes detected; edit something before saving"})
         try:
             item = auth_service.update_key(key_id, updates, role="user")
         except ValueError as exc:
             raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
         if item is None:
-            raise HTTPException(status_code=404, detail={"error": "这条用户密钥不存在，可能已经被删除"})
+            raise HTTPException(status_code=404, detail={"error": "User API key not found; it may have been deleted"})
         return {"item": item, "items": auth_service.list_keys(role="user")}
 
     @router.delete("/api/auth/users/{key_id}")
     async def delete_user_key(key_id: str, authorization: str | None = Header(default=None)):
         require_admin(authorization)
         if not auth_service.delete_key(key_id, role="user"):
-            raise HTTPException(status_code=404, detail={"error": "这条用户密钥不存在，可能已经被删除"})
+            raise HTTPException(status_code=404, detail={"error": "User API key not found; it may have been deleted"})
         return {"items": auth_service.list_keys(role="user")}
 
     @router.get("/api/accounts")
@@ -277,7 +277,7 @@ def create_router() -> APIRouter:
 
     @router.post("/api/accounts/re-login")
     async def re_login_accounts(body: AccountRefreshRequest, authorization: str | None = Header(default=None)):
-        """对选中账号执行密码重新登录流程（密码登录→验证码登录→刷新token）。"""
+        """Password re-login for selected accounts (password → OTP if needed → token refresh)."""
         require_admin(authorization)
         access_tokens = [str(token or "").strip() for token in body.access_tokens if str(token or "").strip()]
         if not access_tokens:
@@ -311,7 +311,7 @@ def create_router() -> APIRouter:
         if not items:
             raise HTTPException(
                 status_code=400,
-                detail={"error": "没有可导出的完整账号，需要同时有 access_token、refresh_token 和 id_token"},
+                detail={"error": "No exportable accounts; each needs access_token, refresh_token, and id_token"},
             )
 
         timestamp = _download_timestamp()
@@ -338,7 +338,7 @@ def create_router() -> APIRouter:
             raise HTTPException(status_code=400, detail={"error": "access_token is required"})
         updates = {key: value for key, value in {"type": body.type, "status": body.status, "quota": body.quota, "proxy": body.proxy}.items() if value is not None}
         if not updates:
-            raise HTTPException(status_code=400, detail={"error": "还没有检测到改动，请修改后再保存"})
+            raise HTTPException(status_code=400, detail={"error": "No changes detected; edit something before saving"})
         account = account_service.update_account(access_token, updates)
         if account is None:
             raise HTTPException(status_code=404, detail={"error": "account not found"})
@@ -349,7 +349,7 @@ def create_router() -> APIRouter:
             body: OAuthLoginStartRequest,
             authorization: str | None = Header(default=None),
     ):
-        """登记一次 PKCE 会话，返回可让用户浏览器打开的 authorize URL。"""
+        """Register a PKCE session and return the authorize URL for the user's browser."""
         require_admin(authorization)
         try:
             return await run_in_threadpool(oauth_login_service.start, body.email_hint)
@@ -361,9 +361,9 @@ def create_router() -> APIRouter:
             body: OAuthLoginFinishRequest,
             authorization: str | None = Header(default=None),
     ):
-        """收用户从浏览器抓回的 callback URL / code，换出 token 三件套并落盘。"""
+        """Exchange callback URL/code for tokens and persist the account."""
         require_admin(authorization)
-        # 入参日志：截断敏感字段，仅保留前几位，方便排错而不泄密
+        # Log truncated inputs for debugging without leaking secrets
         cb_preview = (body.callback or "")[:80]
         sid_preview = (body.session_id or "")[:8]
         print(

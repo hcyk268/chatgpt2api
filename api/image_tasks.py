@@ -31,7 +31,7 @@ async def filter_or_log(call: LoggedCall, text: str) -> None:
     try:
         await run_in_threadpool(check_request, text)
     except HTTPException as exc:
-        call.log("调用失败", status="failed", error=str(exc.detail))
+        call.log("Request failed", status="failed", error=str(exc.detail))
         raise
 
 
@@ -53,7 +53,7 @@ def create_router() -> APIRouter:
         authorization: str | None = Header(default=None),
     ):
         identity = require_identity(authorization)
-        await filter_or_log(LoggedCall(identity, "/api/image-tasks/generations", body.model, "文生图任务", request_text=body.prompt), body.prompt)
+        await filter_or_log(LoggedCall(identity, "/api/image-tasks/generations", body.model, "Text-to-image task", request_text=body.prompt), body.prompt)
         try:
             return await run_in_threadpool(
                 image_task_service.submit_generation,
@@ -80,7 +80,7 @@ def create_router() -> APIRouter:
             raise HTTPException(status_code=400, detail={"error": "client_task_id is required"})
         prompt = str(payload["prompt"])
         model = str(payload["model"])
-        await filter_or_log(LoggedCall(identity, "/api/image-tasks/edits", model, "图生图任务", request_text=prompt), prompt)
+        await filter_or_log(LoggedCall(identity, "/api/image-tasks/edits", model, "Image edit task", request_text=prompt), prompt)
         images = await read_image_sources(image_sources)
         masks = await read_image_sources(mask_sources) if mask_sources else None
         try:

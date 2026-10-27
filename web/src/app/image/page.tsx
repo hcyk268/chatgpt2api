@@ -107,7 +107,7 @@ function formatConversationTime(value: string) {
   if (Number.isNaN(date.getTime())) {
     return "";
   }
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat("en-US", {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -116,7 +116,7 @@ function formatConversationTime(value: string) {
 }
 
 function formatAvailableQuota(accounts: Account[]) {
-  const availableAccounts = accounts.filter((account) => account.status !== "禁用");
+  const availableAccounts = accounts.filter((account) => account.status !== "disabled");
   return String(availableAccounts.reduce((sum, account) => sum + Math.max(0, account.quota), 0));
 }
 
@@ -128,7 +128,7 @@ function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("读取参考图失败"));
+    reader.onerror = () => reject(new Error("Failed to read reference image"));
     reader.readAsDataURL(file);
   });
 }
@@ -173,7 +173,7 @@ function buildReferenceImageFromResult(image: StoredImage, fileName: string): St
 async function fetchImageAsFile(url: string, fileName: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error("读取结果图失败");
+    throw new Error("Failed to read result image");
   }
   const blob = await response.blob();
   return new File([blob], fileName, { type: blob.type || "image/png" });
@@ -212,7 +212,7 @@ function taskDataToStoredImage(image: StoredImage, task: ImageTask): StoredImage
         status: "error",
         taskStatus: undefined,
         progress: undefined,
-        error: "未返回图片数据",
+        error: "No image data returned",
       };
     }
     return {
@@ -236,7 +236,7 @@ function taskDataToStoredImage(image: StoredImage, task: ImageTask): StoredImage
       status: "error",
       taskStatus: undefined,
       progress: undefined,
-      error: task.error || "生成失败",
+      error: task.error || "Generation failed",
       durationMs: task.duration_ms,
     };
   }
@@ -244,7 +244,7 @@ function taskDataToStoredImage(image: StoredImage, task: ImageTask): StoredImage
   const newTaskStatus = task.status === "queued" ? "queued" : task.status === "running" ? "running" : image.taskStatus;
   const shouldSetStartTime = newTaskStatus === "running" && !image.startTime;
   const startTime = shouldSetStartTime ? Date.now() : image.startTime;
-  // elapsedSecs 仅使用后端返回的值，确保计时从 image_stream_resolve_start 开始
+  // elapsedSecs uses backend value only; timing starts at image_stream_resolve_start
   const elapsedSecs =
     newTaskStatus === "running" && typeof task.elapsed_secs === "number"
       ? task.elapsed_secs
@@ -283,7 +283,7 @@ function deriveTurnStatus(turn: ImageTurn): Pick<ImageTurn, "status" | "error"> 
   const failedCount = turn.images.filter((image) => image.status === "error").length;
   const successCount = turn.images.filter((image) => image.status === "success").length;
   if (loadingCount > 0) {
-    // 如果任何图片的 taskStatus 为 running，则状态为 generating
+    // If any image taskStatus is running, turn status is generating
     const hasRunning = turn.images.some((image) => image.taskStatus === "running");
     if (hasRunning) {
       return { status: "generating", error: undefined };
@@ -291,12 +291,12 @@ function deriveTurnStatus(turn: ImageTurn): Pick<ImageTurn, "status" | "error"> 
     return { status: turn.status === "queued" ? "queued" : "generating", error: undefined };
   }
   if (failedCount > 0) {
-    return { status: "error", error: `其中 ${failedCount} 张未成功生成` };
+    return { status: "error", error: `${failedCount} image(s) failed to generate` };
   }
   if (successCount > 0) {
     return { status: "success", error: undefined };
   }
-  // 所有图片都被忽略（images 为空），视为完成
+  // All images dismissed (empty images) counts as complete
   return { status: "success", error: undefined };
 }
 
@@ -409,7 +409,7 @@ async function recoverConversationHistory(items: ImageConversation[]) {
         return {
           ...image,
           status: "error" as const,
-          error: "页面刷新或任务中断，未找到可恢复的任务 ID",
+          error: "Page refreshed or task interrupted; no recoverable task ID found",
         };
       });
       const candidateTurn = turnChanged ? { ...turn, images } : turn;
@@ -477,7 +477,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   const [conversations, setConversations] = useState<ImageConversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [availableQuota, setAvailableQuota] = useState("加载中...");
+  const [availableQuota, setAvailableQuota] = useState("Loading...");
   const [lightboxImages, setLightboxImages] = useState<ImageLightboxItem[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -510,23 +510,23 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   );
   const deleteConfirmTitle =
     deleteConfirm?.type === "all"
-      ? "清空历史记录"
+      ? "Clear history"
       : deleteConfirm?.type === "prompt"
-        ? "删除提示词记录"
+        ? "Delete prompt record"
         : deleteConfirm?.type === "results"
-          ? "删除生成结果"
+          ? "Delete results"
           : deleteConfirm?.type === "one"
-            ? "删除对话"
+            ? "Delete conversation"
             : "";
   const deleteConfirmDescription =
     deleteConfirm?.type === "all"
-      ? "确认删除全部图片历史记录吗？删除后无法恢复。"
+      ? "Delete all image history? This cannot be undone."
       : deleteConfirm?.type === "prompt"
-        ? "确认删除这条提示词记录吗？对应生成结果会保留。"
+        ? "Delete this prompt record? Generated results will be kept."
         : deleteConfirm?.type === "results"
-          ? "确认删除这条生成结果吗？对应提示词记录会保留。"
+          ? "Delete these results? The prompt record will be kept."
           : deleteConfirm?.type === "one"
-            ? "确认删除这条图片对话吗？删除后无法恢复。"
+            ? "Delete this image conversation? This cannot be undone."
             : "";
 
   useEffect(() => {
@@ -560,12 +560,12 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
         return;
       }
 
-      // 恢复滚动位置期间不处理滚动事件
+      // Ignore scroll events while restoring scroll position
       if (isRestoringScrollRef.current) {
         return;
       }
 
-      // 保存当前会话的滚动位置（debounce 300ms 写入 sessionStorage）
+      // Save scroll position for current conversation (debounce 300ms to sessionStorage)
       const convId = lastConversationIdRef.current;
       if (convId) {
         scrollPositionsRef.current.set(convId, element.scrollTop);
@@ -578,7 +578,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
 
       const isAwayFromLatest = getResultsDistanceFromBottom(element) > SCROLL_TO_LATEST_THRESHOLD;
       shouldStickToBottomRef.current = !isAwayFromLatest;
-      // 直接操作 DOM 控制按钮显隐，避免 setState 触发全组件重渲染
+      // Toggle button visibility via DOM to avoid full re-renders from setState
       const btn = scrollToLatestBtnRef.current;
       if (btn) {
         if (isAwayFromLatest) {
@@ -635,7 +635,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
           : null) ?? pickFallbackConversationId(normalizedItems);
       setSelectedConversationId(nextSelectedConversationId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "读取会话记录失败";
+      const message = error instanceof Error ? error.message : "Failed to load conversation history";
       toast.error(message);
     } finally {
       if (!loadCancelledRef.current) {
@@ -670,7 +670,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     void loadHistory();
     return () => {
       loadCancelledRef.current = true;
-      // 组件卸载时保存当前滚动位置到 sessionStorage
+      // Save scroll position to sessionStorage on unmount
       const element = resultsViewportRef.current;
       const convId = lastConversationIdRef.current;
       if (element && convId) {
@@ -725,7 +725,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
       const data = await fetchAccounts();
       setAvailableQuota(formatAvailableQuota(data.items));
     } catch {
-      setAvailableQuota((prev) => (prev === "加载中..." ? "--" : prev));
+      setAvailableQuota((prev) => (prev === "Loading..." ? "--" : prev));
     }
   }, [isAdmin]);
 
@@ -746,7 +746,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     };
   }, [isAdmin, loadQuota]);
 
-  // 切换会话时保存旧会话滚动位置，并隐藏容器防止闪烁
+  // On conversation switch, save old scroll position and hide container to prevent flash
   useLayoutEffect(() => {
     if (!selectedConversation) {
       lastConversationIdRef.current = null;
@@ -764,19 +764,19 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     const didSwitchConversation = lastConversationIdRef.current !== selectedConversation.id;
 
     if (didSwitchConversation) {
-      // 递增 generation，使之前未完成的 rAF 回调失效
+      // Bump generation to invalidate stale rAF callbacks
       scrollRestoreGenerationRef.current += 1;
 
-      // 先保存旧会话的滚动位置（lastConversationIdRef 还是旧值）
+      // Save old conversation scroll (lastConversationIdRef still has old id)
       const oldConvId = lastConversationIdRef.current;
       if (oldConvId) {
         scrollPositionsRef.current.set(oldConvId, element.scrollTop);
         saveScrollPositions(scrollPositionsRef.current);
       }
-      // 更新为新会话 ID
+      // Update to new conversation id
       lastConversationIdRef.current = selectedConversation.id;
 
-      // 如果有保存的滚动位置，隐藏容器防止用户看到 scrollTop=0 的内容
+      // If saved scroll exists, hide container so user does not see scrollTop=0
       const savedScrollTop = scrollPositionsRef.current.get(selectedConversation.id);
       if (savedScrollTop != null && savedScrollTop > 0) {
         element.style.visibility = "hidden";
@@ -785,7 +785,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     }
   }, [selectedConversation?.id]);
 
-  // 恢复滚动位置或跟随最新内容
+  // Restore scroll position or follow latest content
   useEffect(() => {
     if (!selectedConversation) {
       return;
@@ -799,32 +799,32 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     const savedScrollTop = scrollPositionsRef.current.get(selectedConversation.id);
 
     if (savedScrollTop != null && savedScrollTop > 0) {
-      // 捕获当前 generation，用于检测是否已被新的切换取代
+      // Capture generation to detect if a newer switch occurred
       const generation = scrollRestoreGenerationRef.current;
-      // 容器已在 useLayoutEffect 中设为 visibility:hidden，用户看不到滚动过程
+      // Container visibility:hidden in useLayoutEffect hides scroll adjustment
       requestAnimationFrame(() => {
-        // 如果 generation 已变，说明用户又切换了，放弃本次恢复
+        // If generation changed, user switched again; abort restore
         if (scrollRestoreGenerationRef.current !== generation) return;
         element.scrollTop = savedScrollTop;
-        // 再等一帧确保 scrollTop 生效后再显示容器
+        // Wait one more frame for scrollTop then show container
         requestAnimationFrame(() => {
-          // 再次检查 generation
+          // Re-check generation
           if (scrollRestoreGenerationRef.current !== generation) return;
           const isAwayFromLatest = getResultsDistanceFromBottom(element) > SCROLL_TO_LATEST_THRESHOLD;
           shouldStickToBottomRef.current = !isAwayFromLatest;
           const btn = scrollToLatestBtnRef.current;
           if (btn) btn.style.display = isAwayFromLatest ? "" : "none";
-          // 显示容器 — 用户直接看到正确位置的内容
+          // Show container at the correct scroll position
           element.style.visibility = "";
           isRestoringScrollRef.current = false;
         });
       });
-      // 恢复后清除保存的位置，下次内容更新时走正常的 shouldFollowLatest 逻辑
+      // Clear saved position after restore; later updates use shouldFollowLatest
       scrollPositionsRef.current.delete(selectedConversation.id);
       return;
     }
 
-    // 无保存位置，按正常逻辑处理
+    // No saved position; use normal logic
     const shouldFollowLatest =
       shouldStickToBottomRef.current ||
       getResultsDistanceFromBottom(element) <= SCROLL_TO_LATEST_THRESHOLD;
@@ -938,7 +938,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     try {
       await deleteImageConversation(id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "删除会话失败";
+      const message = error instanceof Error ? error.message : "Failed to delete conversation";
       toast.error(message);
       const items = await listImageConversations();
       conversationsRef.current = items;
@@ -959,7 +959,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
         }
         const images =
           part === "results"
-            ? turn.images.map((image) => ({ id: image.id, status: "error" as const, error: "生成结果已删除" }))
+            ? turn.images.map((image) => ({ id: image.id, status: "error" as const, error: "Results were deleted" }))
             : turn.images;
         const derived =
           part === "results"
@@ -1000,9 +1000,9 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
       setConversations([]);
       setSelectedConversationId(null);
       resetComposer();
-      toast.success("已清空历史记录");
+      toast.success("History cleared");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "清空历史记录失败";
+      const message = error instanceof Error ? error.message : "Failed to clear history";
       toast.error(message);
     }
   };
@@ -1016,7 +1016,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     try {
       await renameImageConversation(id, title);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "重命名失败";
+      const message = error instanceof Error ? error.message : "Rename failed";
       toast.error(message);
     }
   };
@@ -1076,7 +1076,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
         fileInputRef.current.value = "";
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "读取参考图失败";
+      const message = error instanceof Error ? error.message : "Failed to read reference image";
       toast.error(message);
     }
   }, []);
@@ -1123,9 +1123,9 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
         setReferenceImageFiles((prev) => [...prev, nextReference.file]);
         setImagePrompt("");
         textareaRef.current?.focus();
-        toast.success("已加入当前参考图，继续输入描述即可编辑");
+        toast.success("Added to reference images; describe your edits to continue");
       } catch (error) {
-        const message = error instanceof Error ? error.message : "读取结果图失败";
+        const message = error instanceof Error ? error.message : "Failed to read result image";
         toast.error(message);
       }
     },
@@ -1157,7 +1157,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
       fileInputRef.current.value = "";
     }
     textareaRef.current?.focus();
-    toast.success("已复用这条提示词配置");
+    toast.success("Reused this prompt configuration");
   }, []);
 
   const openLightbox = useCallback((images: ImageLightboxItem[], index: number) => {
@@ -1232,7 +1232,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
           dataUrlToFile(image.dataUrl, image.name || `${activeTurn.id}-${index + 1}.png`, image.type),
         );
         if (activeTurn.mode === "edit" && referenceFiles.length === 0) {
-          throw new Error("未找到可用于继续编辑的参考图");
+          throw new Error("No reference image available to continue editing");
         }
 
         const pendingImages = activeTurn.images.filter((image) => image.status === "loading");
@@ -1264,11 +1264,11 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
             const taskList = await fetchImageTasks(loadingTaskIds);
             consecutiveErrors = 0;
             if (taskList.items.length > 0) {
-              // 检测是否有超时错误且需要显示重试按钮
+              // Detect timeout errors that need the keep-waiting button
               const timeoutTask = taskList.items.find(
                 (task) =>
                   task.status === "error" &&
-                  task.error?.includes("超时") &&
+                  isImageTimeoutError(task.error) &&
                   task.conversation_id &&
                   !retryingTaskIdsRef.has(task.id),
               );
@@ -1277,9 +1277,9 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
                 setTimeoutRetry({
                   conversationId: timeoutTask.conversation_id,
                   taskId: timeoutTask.id,
-                  taskError: timeoutTask.error || "生图超时",
+                  taskError: timeoutTask.error || "Image generation timed out",
                 });
-                // 应用超时错误到对应图片，显示继续等待按钮
+                // Apply timeout error to images and show keep-waiting button
                 await applyTasks([timeoutTask]);
               } else {
                 await applyTasks(taskList.items);
@@ -1310,7 +1310,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
 
         await loadQuota();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "生成图片失败";
+        const message = error instanceof Error ? error.message : "Failed to generate image";
         await updateConversation(conversationId, (current) => {
           const conversation = current ?? snapshot;
           return {
@@ -1386,7 +1386,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
       setSelectedConversationId(conversationId);
       await persistConversation(nextConversation);
       void runConversationQueue(conversationId);
-      toast.success("已加入重新生成队列");
+      toast.success("Added to regenerate queue");
     },
     [runConversationQueue],
   );
@@ -1441,7 +1441,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
     const { conversationId, taskId } = timeoutRetry;
     try {
       await resumeImagePoll(taskId, imageTimeoutRetrySecs);
-      // 将对应图片的状态重置为 loading，并清除错误
+      // Reset image to loading and clear error
       void updateConversation(conversationId, (current) => {
         const conversation = current ?? conversationsRef.current.find((c) => c.id === conversationId);
         if (!conversation) return current!;
@@ -1464,11 +1464,11 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
           }),
         };
       });
-      // 清除重试状态
+      // Clear retry state
       setTimeoutRetry(null);
-      toast.info(`已继续等待 ${imageTimeoutRetrySecs} 秒`);
+      toast.info(`Continuing to wait for ${imageTimeoutRetrySecs} seconds`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "续轮询失败";
+      const msg = err instanceof Error ? err.message : "Failed to continue polling";
       toast.error(msg);
       setTimeoutRetry(null);
     }
@@ -1477,7 +1477,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   const handleTimeoutRetryCancel = useCallback(() => {
     if (!timeoutRetry) return;
     const { conversationId: convId, taskId, taskError } = timeoutRetry;
-    // 将超时错误应用到对应图片
+    // Apply timeout error to matching images
     void updateConversation(convId, (current) => {
       const conversation = current ?? conversationsRef.current.find((c) => c.id === convId);
       if (!conversation) return current!;
@@ -1547,7 +1547,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   const handleSubmit = async () => {
     const prompt = imagePrompt.trim();
     if (!prompt) {
-      toast.error("请输入提示词");
+      toast.error("Enter a prompt");
       return;
     }
 
@@ -1601,17 +1601,17 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
 
     const targetStats = getImageConversationStats(baseConversation);
     if (targetStats.running > 0 || targetStats.queued > 1) {
-      toast.success("已加入当前对话队列");
+      toast.success("Added to the current conversation queue");
     } else if (!targetConversation) {
-      toast.success("已创建新对话并开始处理");
+      toast.success("Created a new conversation and started processing");
     } else {
-      toast.success("已发送到当前对话");
+      toast.success("Sent to the current conversation");
     }
   };
 
   return (
     <>
-      <section className="mx-auto grid h-[calc(100dvh-6.5rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:h-[calc(100dvh-5.25rem)] sm:gap-3 sm:px-3 sm:pb-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <section aria-label="Image generation" className="mx-auto grid h-[calc(100dvh-7rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-[env(safe-area-inset-bottom)] sm:h-[calc(100dvh-7.5rem)] sm:gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         <div className="hidden h-full min-h-0 border-r border-stone-200/70 pr-3 lg:block">
           <ImageSidebar
             conversations={conversations}
@@ -1631,7 +1631,7 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
             <DialogHeader className="px-6 pt-7 pb-4 sm:px-8">
               <DialogTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                 <History className="size-5" />
-                历史记录
+                History
               </DialogTitle>
             </DialogHeader>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 sm:px-8">
@@ -1665,20 +1665,21 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
               onClick={() => setIsHistoryOpen(true)}
             >
               <History className="mr-2 size-4" />
-              历史记录 ({conversations.length})
+              History ({conversations.length})
             </Button>
             <Button
               className="h-10 rounded-2xl bg-stone-950 text-white shadow-sm"
               onClick={handleCreateDraft}
             >
               <Plus className="size-4" />
-              新建
+              New
             </Button>
             <Button
               variant="outline"
               className="h-10 rounded-2xl border-stone-200 bg-white/85 px-3 text-stone-600 shadow-sm"
               onClick={openClearHistoryConfirm}
               disabled={conversations.length === 0}
+              aria-label="Clear history"
             >
               <Trash2 className="size-4" />
             </Button>
@@ -1709,8 +1710,8 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
             <button
               ref={scrollToLatestBtnRef}
               type="button"
-              aria-label="滚动到最新消息"
-              title="滚动到最新消息"
+              aria-label="Scroll to latest message"
+              title="Scroll to latest message"
               onClick={() => scrollResultsToLatest("smooth")}
               className="absolute bottom-4 left-1/2 z-20 inline-flex size-11 -translate-x-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-stone-700 shadow-lg shadow-stone-200/60 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 dark:border-white/10 dark:bg-stone-800/95 dark:text-stone-100 dark:shadow-black/40 dark:hover:bg-stone-700"
               style={{ display: "none" }}
@@ -1769,10 +1770,10 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
-                取消
+                Cancel
               </Button>
               <Button className="bg-rose-600 text-white hover:bg-rose-700" onClick={() => void handleConfirmDelete()}>
-                确认删除
+                Confirm delete
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1784,6 +1785,11 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+
+function isImageTimeoutError(error?: string) {
+  if (!error) return false;
+  return error.includes("timeout") || error.includes("timed out") || error.includes("\u8d85\u65f6");
+}
 export default function ImagePage() {
   const { isCheckingAuth, session } = useAuthGuard();
 

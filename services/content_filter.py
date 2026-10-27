@@ -9,7 +9,7 @@ from services.config import config
 from services.proxy_service import proxy_settings
 from utils.log import logger
 
-DEFAULT_REVIEW_PROMPT = "判断用户请求是否允许。只回答 ALLOW 或 REJECT。"
+DEFAULT_REVIEW_PROMPT = "Decide whether the user request is allowed. Reply with ALLOW or REJECT only."
 
 # Strip base64 image data URIs before review: a text-only review model can't
 # analyze image bytes, and a single inlined image easily blows past the token
@@ -128,11 +128,33 @@ def _extract_review_decision(data: object) -> str | None:
 
 
 def _is_allow_decision(decision: str) -> bool:
-    return decision.startswith(("allow", "pass", "true", "yes", "通过", "允许", "安全"))
+    return decision.startswith(
+        (
+            "allow",
+            "pass",
+            "true",
+            "yes",
+            "\u901a\u8fc7",
+            "\u5141\u8bb8",
+            "\u5b89\u5168",
+        )
+    )
 
 
 def _is_reject_decision(decision: str) -> bool:
-    return decision.startswith(("reject", "deny", "block", "false", "no", "拒绝", "不允许", "违规", "禁止"))
+    return decision.startswith(
+        (
+            "reject",
+            "deny",
+            "block",
+            "false",
+            "no",
+            "\u62d2\u7edd",
+            "\u4e0d\u5141\u8bb8",
+            "\u8fdd\u89c4",
+            "\u7981\u6b62",
+        )
+    )
 
 
 def _resolve_fail_open(review: dict) -> bool:
@@ -154,7 +176,7 @@ def check_request(text: str) -> None:
     # Local sensitive-word match runs on the raw text (cheap, no network).
     for word in config.sensitive_words:
         if word in text:
-            raise HTTPException(status_code=400, detail={"error": "检测到敏感词，拒绝本次任务"})
+            raise HTTPException(status_code=400, detail={"error": "Sensitive word detected; request rejected"})
     review = config.ai_review
     if not review.get("enabled"):
         return
@@ -175,7 +197,7 @@ def check_request(text: str) -> None:
             **sanitize_stats,
         })
     prompt = str(review.get("prompt") or DEFAULT_REVIEW_PROMPT).strip()
-    content = f"{prompt}\n\n用户请求:\n{review_text}\n\n只回答 ALLOW 或 REJECT。"
+    content = f"{prompt}\n\nUser request:\n{review_text}\n\nReply with ALLOW or REJECT only."
 
     # fail_open=True (default): on upstream failure or ambiguous reply, let the
     # request through. The review is a soft safety net; one missed review is
@@ -186,7 +208,7 @@ def check_request(text: str) -> None:
         if not fail_open:
             raise HTTPException(
                 status_code=503,
-                detail={"error": "AI 审核服务暂时不可用，请稍后重试"},
+                detail={"error": "AI review service is temporarily unavailable; try again later"},
             )
 
     try:
@@ -232,7 +254,7 @@ def check_request(text: str) -> None:
     if _is_allow_decision(decision):
         return
     if _is_reject_decision(decision):
-        raise HTTPException(status_code=400, detail={"error": "AI 审核未通过，拒绝本次任务"})
+        raise HTTPException(status_code=400, detail={"error": "AI review rejected this request"})
     # Ambiguous decisions (e.g. "MAYBE", empty content) fall back to fail-open policy.
     _on_failure({
         "event": "ai_review_ambiguous_decision",

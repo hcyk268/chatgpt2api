@@ -11,7 +11,7 @@ from services.openai_backend_api import OpenAIBackendAPI
 
 def main() -> None:
     ACCESS_TOKEN = ""
-    PROMPT = "帮我去网上搜索关于chatgpt2api的相关项目"
+    PROMPT = "Search the web for projects related to chatgpt2api"
     if not ACCESS_TOKEN.strip():
         raise ValueError("ACCESS_TOKEN is empty")
     print(json.dumps(OpenAIBackendAPI(ACCESS_TOKEN).search(PROMPT), ensure_ascii=False, indent=2))

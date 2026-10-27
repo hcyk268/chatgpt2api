@@ -4,77 +4,77 @@
 
 ## 1.8.0 - 2026-07-28
 
-+ [新增] 新增默认请求上游模型名称和默认思考强度配置，支持在设置页面修改，并可通过模型名的 `-standard`、`-extended`、`-max` 后缀覆盖思考强度。
-+ [修复] 新增没出图也移除本地对话的配置，支持在图片生成失败、超时或仅返回文本时异步隐藏对应对话记录。
-+ [修复] `/v1/models` 汇总各账号类型的官方模型列表，文本请求按模型权限选择账号。
-+ [修复] 过滤隐藏、非最终频道及发往内部工具的助手消息，避免搜索指令和推理内容泄漏到 API 输出。
-+ [修复] 修复输出清洗误删代码和命令中标点前空格的问题。
-+ [修复] 为图片生成 SSE 流增加可配置的硬超时上限，避免上游长连接长时间挂起。
-+ [优化] 数据库存储改为增量同步，仅新增、更新或删除发生变化的记录，保留未变记录的 ID。
++ [Added] Default upstream request model name and default reasoning effort settings; editable in the settings page, overridable via `-standard`, `-extended`, and `-max` model name suffixes.
++ [Fixed] Option to remove local conversations even when no image is produced; asynchronously hides matching conversation records on image generation failure, timeout, or text-only responses.
++ [Fixed] `/v1/models` aggregates official model lists per account type; text requests select accounts by model permissions.
++ [Fixed] Filter hidden, non-final channels and assistant messages sent to internal tools to prevent search instructions and reasoning content from leaking into API output.
++ [Fixed] Output sanitization no longer incorrectly removes spaces before punctuation in code and commands.
++ [Fixed] Configurable hard timeout cap for image generation SSE streams to avoid long-hanging upstream connections.
++ [Improved] Database storage uses incremental sync—only add, update, or delete changed records while preserving IDs for unchanged rows.
 
 ## 1.7.0 - 2026-07-05
 
-+ [移除] 移除注册功能、防滥用机制导致封禁GitHub账号。
++ [Removed] Registration feature and anti-abuse mechanisms that led to GitHub account bans.
 
 ## 1.6.0 - 2026-07-04
 
-+ [修复] 修复sub2api导入问题。
-+ [修复] 修复前端404、405问题。
-+ [新增] 新增出图后删除对话记录功能。
-+ [调整] Pro号不再按无限额度处理、约每天1000张。
++ [Fixed] sub2api import issues.
++ [Fixed] Frontend 404 and 405 issues.
++ [Added] Option to delete conversation records after image generation.
++ [Changed] Pro accounts no longer treated as unlimited quota; approximately 1000 images per day.
 
 ## 1.5.0 - 2026-06-13
 
-+ [新增] 新增 WARP / Privoxy / FlareSolverr 清障方案，注册遇到 Cloudflare 拦截后可刷新 clearance 并重试。
-+ [新增] 新增 `outlook_token` 邮箱池，支持 Outlook/Hotmail 注册验证码读取。
-+ [新增] 新增网页搜索兼容接口、图片编辑 mask 和图片任务相关能力。
-+ [优化] 更新 sentinel/PoW 获取方式，提高上游请求兼容性。
-+ [优化] 调整代理优先级和注册请求重试逻辑。
++ [Added] WARP / Privoxy / FlareSolverr bypass stack; refresh clearance and retry when registration hits Cloudflare blocks.
++ [Added] `outlook_token` email pool for Outlook/Hotmail registration verification codes.
++ [Added] Web search compatibility API, image edit masks, and image task capabilities.
++ [Improved] Updated sentinel/PoW acquisition for better upstream request compatibility.
++ [Improved] Proxy priority and registration request retry logic.
 
 ## 1.4.1 - 2026-06-03
 
-+ [新增] 账号刷新改为异步模式，支持前端轮询刷新/重新登录进度。
-+ [新增] 号池管理页面新增重新登录功能，支持密码登录恢复异常账号。
-+ [新增] 刷新后自动重新登录异常账号（可在设置页开启）。
-+ [新增] 图片生成支持并行模式，多张图片使用独立线程和账号同时生成。
-+ [新增] 图片轮询超时自动换账号重试（最多4次），连接超时同账号递增等待重试。
-+ [新增] 图片二次确认机制与先check再hit可配置化，关闭后可跳过等待直接返回结果。
-+ [新增] 图片任务进度追踪，显示当前生成步骤（上传/预热/获取token/生成中等）。
-+ [新增] 图片超时后续轮询功能，前端显示"继续等待"按钮。
-+ [新增] 设置页新增图片二次确认、超时等待时间、自动重新登录等配置项。
-+ [优化] 优化生图页面滚动加载性能，图片懒加载、会话切换滚动位置保存与恢复。
++ [Added] Async account refresh with frontend polling for refresh/re-login progress.
++ [Added] Re-login on the account pool page to recover errored accounts via password login.
++ [Added] Auto re-login for errored accounts after refresh (configurable in settings).
++ [Added] Parallel image generation—multiple images use separate threads and accounts concurrently.
++ [Added] Auto switch accounts on image poll timeout (up to 4 retries); incremental wait retries on connection timeout for the same account.
++ [Added] Configurable image settle and check-before-hit; when disabled, skip wait and return results directly.
++ [Added] Image task progress tracking showing current step (upload/warm-up/token fetch/generating, etc.).
++ [Added] Continue polling after image timeout; frontend shows a "Continue waiting" button.
++ [Added] Settings for image settle, timeout wait, auto re-login, and related options.
++ [Improved] Image studio scroll performance—lazy loading, scroll position save/restore on session switch.
 
 ## 1.4.0 - 2026-05-31
 
-+ [新增] 新增AI生成可编辑PSD文件逆向。
-+ [新增] 新增AI生成可编辑PPT文件逆向。
++ [Added] Reverse-engineered AI-generated editable PSD files.
++ [Added] Reverse-engineered AI-generated editable PPT files.
 
 ## 1.3.1 - 2026-05-30
 
-+ [新增] 新增ChatGPT搜索调试、Skills。
++ [Added] ChatGPT search debugging and Skills.
 
 ## 1.3.0 - 2026-05-30
 
-+ [新增] 新增ChatGPT搜索接口逆向。
++ [Added] Reverse-engineered ChatGPT search API.
 
 ## 1.2.4 - 2026-05-30
 
-+ [新增] 添加聊天补全缓存与重复请求合并。
-+ [新增] 新增无限画布一键跳转功能
++ [Added] Chat completion cache and duplicate request coalescing.
++ [Added] One-click jump to infinite canvas.
 
 ## 1.2.3 - 2026-05-29
 
-+ [新增] 新增账号级代理。
-+ [修复] 修复503异常信息、前端邮箱换行问题。
++ [Added] Per-account proxy support.
++ [Fixed] 503 error messaging and frontend email line wrapping.
 
 ## 1.2.2 - 2026-05-29
 
-+ [新增] 新增Codex链路生图、支持2k,4k。
-+ [新增] 支持RT刷新账号信息。
++ [Added] Codex path image generation with 2k and 4k support.
++ [Added] RT-based account info refresh.
 
 ## 1.2.0 - 2026-05-28
 
-+ [新增] 当前版本基线，包含 Web 面板、画图、号池管理、注册机、图片管理、日志管理和设置能力。
-+ [新增] 前端版本号支持点击查看版本更新弹窗，展示当前版本、最新版本和更新日志。
-+ [优化] 优化注册机效率，成功率大幅提高。
-+ [优化] 优化生图页面配置选项。
++ [Added] Baseline release with web panel, image studio, account pool, registration bot, image management, logs, and settings.
++ [Added] Clickable frontend version opens update dialog with current version, latest version, and changelog.
++ [Improved] Registration bot efficiency and success rate.
++ [Improved] Image studio configuration options.

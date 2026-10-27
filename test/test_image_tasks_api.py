@@ -83,7 +83,7 @@ class ImageTasksApiTests(unittest.TestCase):
         self.assertEqual(len(self.fake_service.generation_calls), 1)
 
     def test_create_edit_task_accepts_multiple_images(self):
-        """测试图片编辑任务接口支持多个上传图片。"""
+        """Test image edit task API supports multiple uploaded images."""
         response = self.client.post(
             "/api/image-tasks/edits",
             headers=AUTH_HEADERS,
@@ -101,7 +101,7 @@ class ImageTasksApiTests(unittest.TestCase):
         self.assertEqual(len(images), 2)
 
     def test_create_edit_task_accepts_image_url(self):
-        """测试图片编辑任务接口支持表单 image_url 引用。"""
+        """Test image edit task API supports form image_url references."""
         response = self.client.post(
             "/api/image-tasks/edits",
             headers=AUTH_HEADERS,

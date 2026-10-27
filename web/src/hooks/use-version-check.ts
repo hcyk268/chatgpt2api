@@ -55,11 +55,11 @@ export function useVersionCheck() {
         ]);
         setLatestVersion(version.trim() || currentVersion);
         if (changelog.trim()) setReleases(parseChangelog(changelog));
-        if (showMessage) toast.success("已获取最新版本信息");
+        if (showMessage) toast.success("Fetched latest release info");
       } catch {
         setLatestVersion(currentVersion);
         setReleases(localReleases);
-        if (showMessage) toast.error("获取最新版本信息失败");
+        if (showMessage) toast.error("Failed to fetch latest release info");
       } finally {
         setChecking(false);
       }

@@ -13,16 +13,16 @@ Base = declarative_base()
 
 
 class AccountModel(Base):
-    """账号数据模型"""
+    """Account ORM model."""
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     access_token = Column(String(2048), unique=True, nullable=False, index=True)
-    data = Column(Text, nullable=False)  # JSON 格式存储完整账号数据
+    data = Column(Text, nullable=False)  # Full account payload as JSON
 
 
 class AuthKeyModel(Base):
-    """鉴权密钥数据模型"""
+    """Auth key ORM model."""
     __tablename__ = "auth_keys"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -31,20 +31,20 @@ class AuthKeyModel(Base):
 
 
 class DatabaseStorageBackend(StorageBackend):
-    """数据库存储后端（支持 SQLite、PostgreSQL、MySQL 等）"""
+    """Database storage backend (SQLite, PostgreSQL, MySQL, etc.)."""
 
     def __init__(self, database_url: str):
         self.database_url = database_url
         self.engine = create_engine(
             database_url,
-            pool_pre_ping=True,  # 自动检测连接是否有效
-            pool_recycle=3600,   # 1小时回收连接
+            pool_pre_ping=True,  # Detect stale connections
+            pool_recycle=3600,   # Recycle connections after 1 hour
         )
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
     def load_accounts(self) -> list[dict[str, Any]]:
-        """从数据库加载账号数据"""
+        """Load account data from the database."""
         session = self.Session()
         try:
             accounts = []
@@ -60,15 +60,15 @@ class DatabaseStorageBackend(StorageBackend):
             session.close()
 
     def save_accounts(self, accounts: list[dict[str, Any]]) -> None:
-        """保存账号数据到数据库"""
+        """Save account data to the database."""
         self._save_rows(AccountModel, accounts, "access_token")
 
     def load_auth_keys(self) -> list[dict[str, Any]]:
-        """从数据库加载鉴权密钥数据"""
+        """Load auth key data from the database."""
         return self._load_rows(AuthKeyModel)
 
     def save_auth_keys(self, auth_keys: list[dict[str, Any]]) -> None:
-        """保存鉴权密钥数据到数据库"""
+        """Save auth key data to the database."""
         self._save_rows(AuthKeyModel, auth_keys, "id", "key_id")
 
     def _load_rows(self, model: type[AccountModel] | type[AuthKeyModel]) -> list[dict[str, Any]]:
@@ -136,11 +136,11 @@ class DatabaseStorageBackend(StorageBackend):
             session.close()
 
     def health_check(self) -> dict[str, Any]:
-        """健康检查"""
+        """Health check."""
         try:
             session = self.Session()
             try:
-                # 尝试执行简单查询
+                # Simple liveness query
                 session.execute(text("SELECT 1"))
                 count = session.query(AccountModel).count()
                 auth_key_count = session.query(AuthKeyModel).count()
@@ -161,7 +161,7 @@ class DatabaseStorageBackend(StorageBackend):
             }
 
     def get_backend_info(self) -> dict[str, Any]:
-        """获取存储后端信息"""
+        """Return storage backend metadata."""
         db_type = "unknown"
         if "sqlite" in self.database_url:
             db_type = "sqlite"
@@ -173,13 +173,13 @@ class DatabaseStorageBackend(StorageBackend):
         return {
             "type": "database",
             "db_type": db_type,
-            "description": f"数据库存储 ({db_type})",
+            "description": f"Database storage ({db_type})",
             "database_url": self._mask_password(self.database_url),
         }
 
     @staticmethod
     def _mask_password(url: str) -> str:
-        """隐藏数据库连接字符串中的密码"""
+        """Mask the password in a database connection string."""
         if "://" not in url:
             return url
         try:

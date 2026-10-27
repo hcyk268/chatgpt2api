@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
+import { Activity, Bug, Image, Images, Menu, Settings, Users } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { HeaderActions } from "@/components/header-actions";
@@ -16,15 +16,15 @@ import { cn } from "@/lib/utils";
 import { clearStoredAuthSession, type StoredAuthSession } from "@/store/auth";
 
 const adminNavItems = [
-  { href: "/image", label: "生图" },
-  { href: "/accounts", label: "号池管理" },
-  { href: "/image-manager", label: "图片管理" },
-  { href: "/logs", label: "日志管理" },
-  { href: "/debug", label: "调试" },
-  { href: "/settings", label: "设置" },
+  { href: "/image", label: "Images", icon: Image },
+  { href: "/accounts", label: "Accounts", icon: Users },
+  { href: "/image-manager", label: "Gallery", icon: Images },
+  { href: "/logs", label: "Logs", icon: Activity },
+  { href: "/debug", label: "Debug", icon: Bug },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-const userNavItems = [{ href: "/image", label: "画图" }];
+const userNavItems = [{ href: "/image", label: "Images", icon: Image }];
 
 function buildThirdPartyHref(appUrl: string, baseUrl: string, apiKey: string) {
   const url = appUrl.trim();
@@ -71,11 +71,13 @@ export function TopNav() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!session) {
-      setThirdPartyApps(null);
-      return;
-    }
     let active = true;
+    if (!session) {
+      queueMicrotask(() => {
+        if (active) setThirdPartyApps(null);
+      });
+      return () => { active = false; };
+    }
     const load = async () => {
       try {
         const data = await fetchThirdPartyApps();
@@ -108,7 +110,7 @@ export function TopNav() {
   }
 
   const navItems = session.role === "admin" ? adminNavItems : userNavItems;
-  const roleLabel = session.role === "admin" ? "管理员" : "普通用户";
+  const roleLabel = session.role === "admin" ? "Admin" : "User";
   const displayName = session.name.trim() || roleLabel;
   const baseUrl = webConfig.apiUrl.replace(/\/$/, "") || window.location.origin;
   const canvas = thirdPartyApps?.infinite_canvas;
@@ -131,13 +133,13 @@ export function TopNav() {
 
   return (
     <>
-      <header className="border-b border-stone-100/50 dark:border-white/10">
-        <div className="flex min-h-12 flex-col gap-1 px-3 py-2 sm:h-12 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-0">
-          <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
+      <header className="border-b border-stone-200/70 dark:border-white/10">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-1 py-2 sm:px-2 lg:gap-6">
+          <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none lg:gap-3">
             <Sheet>
-              <SheetTrigger className="inline-flex size-8 items-center justify-center text-stone-700 transition hover:text-stone-950 sm:hidden dark:text-stone-200 dark:hover:text-white">
-                <Menu className="size-4" />
-                <span className="sr-only">打开导航</span>
+              <SheetTrigger className="inline-flex size-10 items-center justify-center rounded-xl border border-stone-200 bg-white/80 text-stone-700 transition hover:bg-white lg:hidden dark:border-white/10 dark:text-stone-200">
+                <Menu className="size-5" />
+                <span className="sr-only">Open navigation</span>
               </SheetTrigger>
               <SheetContent side="left">
                 <SheetHeader>
@@ -152,19 +154,19 @@ export function TopNav() {
                         className="flex items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-950 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-white"
                         onClick={handleCanvasOpen}
                       >
-                        无限画布
+                        Infinite canvas
                       </button>
                     </SheetClose>
                   ) : null}
                   {navItems.map((item) => {
                     const active = pathname === item.href;
                     const className = cn(
-                      "flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
                       active ? "bg-stone-950 text-white dark:bg-white dark:text-stone-950" : "text-stone-600 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-300 dark:hover:bg-white/10 dark:hover:text-white",
                     );
                     return (
                       <SheetClose asChild key={item.href}>
-                        <Link href={item.href} className={className}>{item.label}</Link>
+                        <Link href={item.href} className={className} aria-current={active ? "page" : undefined}><item.icon className="size-4" aria-hidden="true" />{item.label}</Link>
                       </SheetClose>
                     );
                   })}
@@ -175,27 +177,27 @@ export function TopNav() {
                     className="rounded-xl border border-stone-200 px-3 py-2.5 text-left text-sm font-medium text-stone-500 transition hover:text-stone-950 dark:border-white/10 dark:text-stone-300 dark:hover:text-white"
                     onClick={() => void handleLogout()}
                   >
-                    退出
+                    Sign out
                   </button>
                 </SheetFooter>
               </SheetContent>
             </Sheet>
             <Link
               href="/image"
-              className="shrink-0 py-1 text-[15px] font-bold tracking-tight text-stone-950 transition hover:text-stone-700 dark:text-stone-50 dark:hover:text-white"
+              className="shrink-0 py-1 text-base font-bold tracking-tight text-stone-950 transition hover:text-stone-700 dark:text-stone-50 dark:hover:text-white"
             >
               chatgpt2api
             </Link>
-            <HeaderActions className="ml-auto sm:hidden" showGithubText={false} />
+            <HeaderActions className="ml-auto lg:hidden" showGithubText={false} />
           </div>
-          <nav className="hide-scrollbar -mx-1 hidden min-w-0 flex-1 gap-1 overflow-x-auto px-1 sm:mx-0 sm:flex sm:justify-center sm:gap-8 sm:overflow-visible sm:px-0">
+          <nav aria-label="Main navigation" className="hide-scrollbar hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex lg:justify-center">
             {canvasHref ? (
               <button
                 type="button"
                 onClick={handleCanvasOpen}
-                className="relative shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] font-medium text-stone-500 transition hover:text-stone-900 sm:rounded-none sm:px-0 sm:text-[15px] dark:text-stone-400 dark:hover:text-stone-100"
+                className="shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium text-stone-500 transition hover:bg-white/80 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
               >
-                无限画布
+                Infinite canvas
               </button>
             ) : null}
             {navItems.map((item) => {
@@ -204,22 +206,23 @@ export function TopNav() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] font-medium transition sm:rounded-none sm:px-0 sm:text-[15px]",
+                    "inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition",
                     active
-                      ? "bg-stone-950 text-white sm:bg-transparent sm:font-semibold sm:text-stone-950 dark:bg-white dark:text-stone-950 dark:sm:bg-transparent dark:sm:text-white"
-                      : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100",
+                      ? "bg-white text-stone-950 shadow-sm ring-1 ring-stone-200/70 dark:bg-white/10 dark:text-white dark:ring-white/10"
+                      : "text-stone-500 hover:bg-white/70 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100",
                   )}
                 >
+                  <item.icon className="size-4" aria-hidden="true" />
                   {item.label}
-                  {active ? <span className="absolute inset-x-0 -bottom-[1px] hidden h-0.5 bg-stone-950 dark:bg-white sm:block" /> : null}
                 </Link>
               );
             })}
           </nav>
-          <div className="hidden items-center justify-end gap-2 sm:flex sm:gap-3">
+          <div className="hidden shrink-0 items-center justify-end gap-3 lg:flex">
             <HeaderActions />
-            <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-[10px] font-medium text-stone-500 dark:bg-white/8 dark:text-stone-300 sm:inline-block sm:text-[11px]">
+            <span className="hidden rounded-lg bg-stone-100 px-2.5 py-1.5 text-xs font-medium text-stone-500 dark:bg-white/8 dark:text-stone-300 xl:inline-block">
               {roleLabel} · {displayName}
             </span>
             <button
@@ -227,7 +230,7 @@ export function TopNav() {
               className="py-1 text-xs text-stone-400 transition hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-200 sm:text-sm"
               onClick={() => void handleLogout()}
             >
-              退出
+              Sign out
             </button>
           </div>
         </div>
@@ -235,13 +238,13 @@ export function TopNav() {
       <Dialog open={isCanvasDialogOpen} onOpenChange={setIsCanvasDialogOpen}>
         <DialogContent showCloseButton={false} className="rounded-2xl p-6">
           <DialogHeader className="gap-2">
-            <DialogTitle>跳转到三方应用</DialogTitle>
+            <DialogTitle>Open third-party app</DialogTitle>
             <DialogDescription className="text-sm leading-6">
-              该入口仅供个人测试使用，建议自行本机部署后再长期使用。跳转地址会默认带上本项目地址和当前密钥，用于自动填充连接信息；如果不放心，可以取消后手动前往应用并自行输入。
+              This entry is for personal testing only; deploy locally for long-term use. The redirect URL includes this project&apos;s base URL and your current API key to pre-fill connection settings. Cancel and open the app manually if you prefer to enter them yourself.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <div className="text-xs font-medium text-stone-500">完整跳转地址</div>
+            <div className="text-xs font-medium text-stone-500">Full redirect URL</div>
             <div className="max-h-28 overflow-auto break-all rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 font-mono text-xs leading-5 text-stone-700">
               {canvasDisplayHref}
             </div>
@@ -249,11 +252,11 @@ export function TopNav() {
           <DialogFooter className="pt-2">
             <DialogClose asChild>
               <Button type="button" variant="outline" className="rounded-xl border-stone-200 bg-white text-stone-700">
-                取消
+                Cancel
               </Button>
             </DialogClose>
             <Button type="button" className="rounded-xl bg-stone-950 text-white hover:bg-stone-800" onClick={confirmCanvasOpen}>
-              继续跳转
+              Continue
             </Button>
           </DialogFooter>
         </DialogContent>

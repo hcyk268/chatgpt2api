@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="24 20 378 110" role="img" aria-labelledby="kri-horizontal-title">
-    <title id="kri-horizontal-title">坤肉AI 横版标志</title>
+    <title id="kri-horizontal-title">Kunrou AI horizontal logo</title>
 
     <defs>
         <linearGradient id="kri-horizontal-upper" gradientUnits="userSpaceOnUse" x1="64" y1="29" x2="78" y2="103">
@@ -46,5 +46,5 @@
     <path fill="url(#kri-horizontal-orbit)" d="M52.4 70.6C39.3 78.8 24.6 91.5 24.7 98C24.9 112.4 67.4 106.5 110.3 80.6L108.4 78.9C76.7 93.5 43.8 102.9 36.6 96.1C31.1 90.9 44.2 79.7 52.4 75Z"/>
     <path fill="url(#kri-horizontal-star)" d="M149.4 20.5C150.5 27.7 153.5 30.5 160.5 31.7C153.5 32.9 150.5 36 149.4 43.1C148.2 36 145.3 32.9 138.3 31.7C145.3 30.5 148.2 27.7 149.4 20.5Z"/>
 
-    <text x="184" y="100" fill="url(#kri-horizontal-text)" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="66" font-weight="700" letter-spacing="1">坤肉AI</text>
+    <text x="184" y="100" fill="url(#kri-horizontal-text)" font-family="system-ui, sans-serif" font-size="66" font-weight="700" letter-spacing="1">Kunrou AI</text>
 </svg>

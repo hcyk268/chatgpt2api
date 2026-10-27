@@ -8,6 +8,7 @@ wheels/
 web_dist
 # Virtual environments
 .venv
+.cache/
 .idea
 data
 config.json
@@ -29,7 +30,7 @@ docker-compose-local.yml
 # Git cache
 git_cache/
 
-# 调试/测试输出目录
+# Debug/test output directories
 loginwithpassword_*/
 logwithemailverifycode_*/
 test_batch_output/

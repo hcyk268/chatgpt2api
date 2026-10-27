@@ -15,6 +15,7 @@ from fastapi import HTTPException
 from PIL import Image
 
 from services.config import DATA_DIR, config
+from services.image_r2_service import image_r2_service
 
 IMAGE_INDEX_FILE = DATA_DIR / "image_index.json"
 IMAGE_INDEX_LOCK = Lock()
@@ -241,7 +242,11 @@ class ImageStorageService:
             items = self._load_clean_index()
             items[rel] = item
             self._save_index(items)
-        return StoredImage(rel=rel, url=self._public_url(rel, base_url), storage=str(item["storage"]), size=len(image_data))
+        try:
+            r2_url = image_r2_service.upload(rel, image_data)
+        except Exception as exc:
+            raise ImageStorageError("R2 image upload failed; check R2 credentials, bucket and permissions") from exc
+        return StoredImage(rel=rel, url=r2_url or self._public_url(rel, base_url), storage=str(item["storage"]), size=len(image_data))
 
     def get_bytes(self, rel: str) -> bytes:
         safe_rel = _safe_relative_path(rel)
@@ -359,7 +364,7 @@ class ImageStorageService:
     def sync_all(self) -> dict[str, int]:
         settings = self.settings()
         if self.mode() not in {"webdav", "both"}:
-            raise ImageStorageError("WebDAV 图片存储未启用")
+            raise ImageStorageError("WebDAV image storage is not enabled")
         uploaded = 0
         skipped = 0
         failed = 0

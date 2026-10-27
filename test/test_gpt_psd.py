@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 BASE_URL = "http://127.0.0.1:8000"
-PROMPT = "按原图位置拆分海报元素并合成可编辑 PSD，同时输出每个图层素材 zip。"
+PROMPT = "Split poster elements by original layout into an editable PSD and export a zip of layer assets."
 BASE64_IMAGES: list[str] = []
 TIMEOUT_SECS = 600
 POLL_INTERVAL_SECS = 5

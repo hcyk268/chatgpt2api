@@ -20,11 +20,11 @@ import { UserKeysCard } from "./components/user-keys-card";
 import { useSettingsStore } from "./store";
 
 const settingsTabs = [
-  { value: "basic", title: "基础配置" },
-  { value: "backup", title: "备份" },
-  { value: "keys", title: "用户密钥" },
-  { value: "api-docs", title: "接口接入" },
-  { value: "canvas", title: "画布入口" },
+  { value: "basic", title: "General" },
+  { value: "backup", title: "Backup" },
+  { value: "keys", title: "User keys" },
+  { value: "api-docs", title: "API docs" },
+  { value: "canvas", title: "Canvas" },
   { value: "proxy", title: "FlareSolverr" },
   { value: "cpa", title: "CPA" },
   { value: "sub2api", title: "Sub2API" },
@@ -80,8 +80,8 @@ function SettingsPageContent() {
       <SettingsDataController />
       <SettingsHeader />
       <Tabs defaultValue="basic" className="space-y-4">
-        <div className="sticky top-3 z-20 overflow-x-auto rounded-xl border border-white/80 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
-          <TabsList variant="line" className="min-w-max justify-start">
+        <div className="sticky top-2 z-20 overflow-x-auto rounded-2xl border border-stone-200/70 bg-white/95 px-2 py-1.5 shadow-sm backdrop-blur">
+          <TabsList variant="line" aria-label="Settings sections" className="min-w-max justify-start">
             {settingsTabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value} className="px-4">
                 {tab.title}

@@ -1,14 +1,14 @@
-"""验证 OAuth 账号的自动刷新是否生效。
+"""Verify OAuth account auto-refresh.
 
-用法（在容器内，工作目录 /app）：
-    uv run python scripts/verify_oauth_refresh.py            # 只读诊断，安全
-    uv run python scripts/verify_oauth_refresh.py --force    # 真正触发一次刷新
+Usage (in container, working directory /app):
+    uv run python scripts/verify_oauth_refresh.py            # read-only diagnostics
+    uv run python scripts/verify_oauth_refresh.py --force    # trigger one real refresh
 
-只读模式：列出每个账号的 access_token 剩余有效期、是否带 refresh_token、
-          上次刷新时间与上次刷新错误，判断"有没有料可刷"。
---force ：对每个带 refresh_token 的账号强制走一次 refresh_access_token(force=True)，
-          直接验证 refresh_token + 本项目 client_id 能否从 OpenAI 换出新 access_token。
-          这会真实轮换 access_token（新 token 有效，不损坏账号）。
+Read-only: lists each account's access_token TTL, refresh_token presence,
+          last refresh time/error to see if refresh is possible.
+--force: calls refresh_access_token(force=True) for each account with refresh_token,
+         validating refresh_token + project client_id against OpenAI.
+         This rotates access_token for real (new token is valid; account is not broken).
 """
 from __future__ import annotations
 
@@ -19,16 +19,16 @@ from services.account_service import account_service
 
 def _fmt_remaining(seconds: int | None) -> str:
     if seconds is None:
-        return "无法解析 exp"
+        return "cannot parse exp"
     if seconds <= 0:
-        return f"已过期 {(-seconds) // 3600}h"
-    return f"{seconds // 3600}h{(seconds % 3600) // 60}m 后过期"
+        return f"expired {(-seconds) // 3600}h ago"
+    return f"expires in {seconds // 3600}h{(seconds % 3600) // 60}m"
 
 
 def diagnose() -> list[str]:
-    """只读：打印每个账号的刷新就绪状态，返回带 refresh_token 的 token 列表。"""
+    """Read-only: print refresh readiness; return tokens that have refresh_token."""
     tokens = account_service.list_tokens()
-    print(f"账号总数: {len(tokens)}\n")
+    print(f"Total accounts: {len(tokens)}\n")
     refreshable: list[str] = []
     for token in tokens:
         account = account_service.get_account(token) or {}
@@ -36,10 +36,10 @@ def diagnose() -> list[str]:
         has_rt = bool(str(account.get("refresh_token") or "").strip())
         if has_rt:
             refreshable.append(token)
-        print(f"- email={account.get('email') or '(未知)'}")
+        print(f"- email={account.get('email') or '(unknown)'}")
         print(f"    access_token[:20]   = {token[:20]}...")
-        print(f"    距过期              = {_fmt_remaining(remaining)}")
-        print(f"    refresh_token       = {'有 ✅' if has_rt else '无 ❌（无法自动刷新）'}")
+        print(f"    time to expiry      = {_fmt_remaining(remaining)}")
+        print(f"    refresh_token       = {'yes' if has_rt else 'no (cannot auto-refresh)'}")
         print(f"    last_token_refresh_at    = {account.get('last_token_refresh_at')}")
         print(f"    last_token_refresh_error = {account.get('last_token_refresh_error')}")
         print()
@@ -47,12 +47,12 @@ def diagnose() -> list[str]:
 
 
 def force_refresh(tokens: list[str]) -> None:
-    """对每个账号 force 刷新一次，并对比前后状态判断成败。"""
+    """Force-refresh each account once and report success/failure."""
     if not tokens:
-        print("没有带 refresh_token 的账号，无法验证刷新。")
+        print("No accounts with refresh_token; cannot verify refresh.")
         return
     print("=" * 60)
-    print(f"开始对 {len(tokens)} 个账号 force 刷新（真实调用 OpenAI）...\n")
+    print(f"Force refresh for {len(tokens)} account(s) (live OpenAI call)...\n")
     ok = 0
     for token in tokens:
         before = account_service.get_account(token) or {}
@@ -63,20 +63,20 @@ def force_refresh(tokens: list[str]) -> None:
         success = bool(new_token) and not err
         if success:
             ok += 1
-        print(f"- email={before.get('email') or '(未知)'}")
-        print(f"    旧 access_token[:20] = {token[:20]}...")
-        print(f"    新 access_token[:20] = {new_token[:20]}...")
-        print(f"    token 是否轮换       = {'是' if rotated else '否（exp 未到刷新窗口时可能返回原值）'}")
+        print(f"- email={before.get('email') or '(unknown)'}")
+        print(f"    old access_token[:20] = {token[:20]}...")
+        print(f"    new access_token[:20] = {new_token[:20]}...")
+        print(f"    token rotated         = {'yes' if rotated else 'no (may return same token before refresh window)'}")
         print(f"    last_token_refresh_at    = {after.get('last_token_refresh_at')}")
-        print(f"    last_token_refresh_error = {after.get('last_token_refresh_error') or '无'}")
-        print(f"    >>> 刷新结果         = {'成功 ✅' if success else '失败 ❌'}")
+        print(f"    last_token_refresh_error = {after.get('last_token_refresh_error') or 'none'}")
+        print(f"    >>> refresh result      = {'success' if success else 'failed'}")
         print()
     print("=" * 60)
-    print(f"汇总: {ok}/{len(tokens)} 个账号刷新成功")
+    print(f"Summary: {ok}/{len(tokens)} account(s) refreshed successfully")
     if ok == len(tokens):
-        print("✅ 自动刷新机制对这些账号完全可用——refresh_token 与 client_id 匹配。")
+        print("Auto-refresh works for these accounts (refresh_token matches client_id).")
     else:
-        print("❌ 有账号刷新失败，看上面的 last_token_refresh_error，或 docker logs 里的 [oauth-login]/refresh 日志。")
+        print("Some accounts failed; see last_token_refresh_error above or docker logs for [oauth-login]/refresh.")
 
 
 def main() -> None:
@@ -85,7 +85,7 @@ def main() -> None:
     if do_force:
         force_refresh(refreshable)
     else:
-        print("提示: 加 --force 参数可真正触发一次刷新以验证能否成功。")
+        print("Tip: pass --force to trigger a real refresh and verify success.")
 
 
 if __name__ == "__main__":

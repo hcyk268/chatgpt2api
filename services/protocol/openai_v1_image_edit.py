@@ -21,11 +21,11 @@ def _composite_mask(
     images: list[tuple[bytes, str, str]],
     masks: list[tuple[bytes, str, str]],
 ) -> list[tuple[bytes, str, str]]:
-    """将 mask 的 alpha 通道合成到图片中，标识需要编辑的区域。
-    
-    mask 的透明区域（低 alpha）= 需要编辑的区域，
-    mask 的不透明区域（高 alpha）= 保留的区域。
-    如果无 mask 则返回原图。
+    """Composite mask alpha into the image to mark editable regions.
+
+    Transparent mask areas (low alpha) = regions to edit;
+    opaque mask areas (high alpha) = regions to keep.
+    Returns the original image when no mask is provided.
     """
     if not masks:
         return images

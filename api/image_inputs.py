@@ -25,18 +25,18 @@ MASK_REFERENCE_FIELDS = {"mask", "mask[]"}
 
 
 def _clean(value: object, default: str = "") -> str:
-    """清理字符串：转换为字符串并去掉首尾空白。"""
+    """Normalize a value to a stripped string."""
     text = str(value if value is not None else default).strip()
     return text or default
 
 
 def _is_upload(value: object) -> TypeGuard[UploadFile]:
-    """识别上传文件：兼容 Starlette 表单返回的 UploadFile。"""
+    """Type guard for Starlette UploadFile form values."""
     return isinstance(value, UploadFile)
 
 
 def _parse_bool(value: object) -> bool | None:
-    """解析布尔字段：兼容 JSON 布尔值和表单字符串。"""
+    """Parse a boolean from JSON or form string values."""
     if value is None or value == "":
         return None
     if isinstance(value, bool):
@@ -50,7 +50,7 @@ def _parse_bool(value: object) -> bool | None:
 
 
 def _parse_count(value: object) -> int:
-    """解析生成数量：保持图片接口的 1 到 4 限制。"""
+    """Parse image count (1–4 per OpenAI image API limits)."""
     try:
         count = int(value or 1)
     except (TypeError, ValueError) as exc:
@@ -61,7 +61,7 @@ def _parse_count(value: object) -> int:
 
 
 def _payload_from_fields(fields: dict[str, Any]) -> dict[str, Any]:
-    """构造图片编辑载荷：从表单或 JSON 字段提取通用参数。"""
+    """Build image edit payload fields from form or JSON input."""
     prompt = _clean(fields.get("prompt"))
     if not prompt:
         raise HTTPException(status_code=400, detail={"error": "prompt is required"})
@@ -80,7 +80,7 @@ def _payload_from_fields(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _json_reference_value(value: object) -> object:
-    """解析表单图片引用：支持把 images 字段写成 JSON 字符串。"""
+    """Parse form image reference; allows JSON-encoded images field."""
     if not isinstance(value, str):
         return value
     text = value.strip()
@@ -105,7 +105,7 @@ def _decode_base64_image(value: object, filename: str, mime_type: str) -> ImageI
 
 
 def _source_from_object(value: dict[str, Any]) -> list[ImageSource]:
-    """提取图片引用对象：支持 image_url 或 url，明确拒绝 file_id。"""
+    """Extract image reference object (image_url/url); rejects file_id."""
     has_url = "image_url" in value or "url" in value
     if value.get("file_id"):
         raise HTTPException(
@@ -126,7 +126,7 @@ def _source_from_object(value: dict[str, Any]) -> list[ImageSource]:
 
 
 def _sources_from_value(value: object) -> list[ImageSource]:
-    """展开图片引用：把字符串、数组和对象统一成图片来源列表。"""
+    """Flatten image references (string, array, object) into a source list."""
     value = _json_reference_value(value)
     if _is_upload(value):
         return [value]
@@ -150,7 +150,7 @@ def _sources_from_value(value: object) -> list[ImageSource]:
 
 
 def _json_image_sources(body: dict[str, Any]) -> list[ImageSource]:
-    """读取 JSON 图片引用：优先支持官方 images 数组字段。"""
+    """Read JSON image references; prefers official images array."""
     sources: list[ImageSource] = []
     for key in ("images", "image", "image_url"):
         if key in body:
@@ -159,7 +159,7 @@ def _json_image_sources(body: dict[str, Any]) -> list[ImageSource]:
 
 
 def _json_mask_sources(body: dict[str, Any]) -> list[ImageSource]:
-    """读取 JSON mask 引用。"""
+    """Read JSON mask reference."""
     mask = body.get("mask")
     if mask is not None:
         return _sources_from_value(mask)
@@ -167,9 +167,9 @@ def _json_mask_sources(body: dict[str, Any]) -> list[ImageSource]:
 
 
 async def parse_image_edit_request(request: Request) -> tuple[dict[str, Any], list[ImageSource], list[ImageSource]]:
-    """解析图片编辑请求：同时支持 multipart 上传和官方 JSON 图片 URL。
-    
-    返回 (payload, image_sources, mask_sources)
+    """Parse image edit request (multipart upload or JSON image URLs).
+
+    Returns (payload, image_sources, mask_sources).
     """
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type == "application/json":
@@ -198,7 +198,7 @@ async def parse_image_edit_request(request: Request) -> tuple[dict[str, Any], li
 
 
 def _extension_from_mime(mime_type: str) -> str:
-    """推导图片扩展名：把 MIME 类型转换为常见文件后缀。"""
+    """Map MIME type to a common file extension."""
     subtype = mime_type.split("/", 1)[1].split("+", 1)[0] if "/" in mime_type else "png"
     if subtype == "jpeg":
         return "jpg"
@@ -206,7 +206,7 @@ def _extension_from_mime(mime_type: str) -> str:
 
 
 def _safe_filename(name: str, mime_type: str, fallback: str) -> str:
-    """生成安全文件名：清理 URL 文件名并补齐扩展名。"""
+    """Build a safe filename from URL name and MIME type."""
     cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("._")
     if not cleaned:
         cleaned = fallback
@@ -216,7 +216,7 @@ def _safe_filename(name: str, mime_type: str, fallback: str) -> str:
 
 
 def _decode_data_url(url: str) -> ImageInput:
-    """解码 data URL：把内联图片转成标准图片输入元组。"""
+    """Decode a data URL into standard image input bytes."""
     header, separator, payload = url.partition(",")
     if not separator:
         raise HTTPException(status_code=400, detail={"error": "invalid data image URL"})
@@ -235,7 +235,7 @@ def _decode_data_url(url: str) -> ImageInput:
 
 
 def _response_mime_type(response: requests.Response, parsed_path: str) -> str:
-    """识别下载图片类型：优先响应头，必要时按 URL 后缀推断。"""
+    """Detect downloaded image MIME type (headers, then URL suffix)."""
     header_type = str(response.headers.get("content-type") or "").split(";", 1)[0].strip().lower()
     guessed_type = mimetypes.guess_type(parsed_path)[0] or ""
     if header_type.startswith("image/"):
@@ -250,13 +250,13 @@ def _response_mime_type(response: requests.Response, parsed_path: str) -> str:
 
 
 def _filename_from_url(parsed_path: str, mime_type: str) -> str:
-    """生成 URL 图片文件名：从链接路径提取名称并做安全化。"""
+    """Derive a safe filename from an image URL path."""
     raw_name = PurePosixPath(unquote(parsed_path)).name
     return _safe_filename(raw_name, mime_type, "image_url")
 
 
 def _download_image_url(url: str) -> ImageInput:
-    """下载远程图片：把 http/https 图片链接转成标准图片输入元组。"""
+    """Download remote http(s) image into standard image input bytes."""
     source = _clean(url)
     if source.startswith("data:"):
         return _decode_data_url(source)
@@ -288,7 +288,7 @@ def _download_image_url(url: str) -> ImageInput:
 
 
 async def read_image_sources(sources: list[ImageSource]) -> list[ImageInput]:
-    """读取图片来源：上传文件直接读取，URL 下载后统一返回图片元组。"""
+    """Read image sources: upload bytes or fetch URLs into image tuples."""
     images: list[ImageInput] = []
     for source in sources:
         if isinstance(source, tuple):

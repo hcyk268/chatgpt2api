@@ -31,7 +31,7 @@ class ImagesEditsApiTests(unittest.TestCase):
         self.client = TestClient(app)
 
     def test_edit_accepts_json_image_url(self):
-        """测试图片编辑接口支持官方 JSON image_url 引用。"""
+        """Test image edits API accepts official JSON image_url references."""
         response = self.client.post(
             "/v1/images/edits",
             headers=AUTH_HEADERS,
@@ -52,7 +52,7 @@ class ImagesEditsApiTests(unittest.TestCase):
         self.assertEqual(payload["images"], [(PNG_BYTES, "image_url.png", "image/png")])
 
     def test_edit_rejects_file_id_reference(self):
-        """测试图片编辑接口对暂不支持的 file_id 返回明确错误。"""
+        """Test image edits API returns a clear error for unsupported file_id."""
         response = self.client.post(
             "/v1/images/edits",
             headers=AUTH_HEADERS,

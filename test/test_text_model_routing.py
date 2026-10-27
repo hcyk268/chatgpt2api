@@ -26,10 +26,10 @@ class TextAccountRoutingTests(unittest.TestCase):
         )
         self.service.add_account_items(
             [
-                {"access_token": "free", "type": "free", "status": "正常"},
-                {"access_token": "plus", "type": "Plus", "status": "正常"},
-                {"access_token": "pro", "type": "Pro", "status": "正常"},
-                {"access_token": "pro-disabled", "type": "Pro", "status": "禁用"},
+                {"access_token": "free", "type": "free", "status": "ok"},
+                {"access_token": "plus", "type": "Plus", "status": "ok"},
+                {"access_token": "pro", "type": "Pro", "status": "ok"},
+                {"access_token": "pro-disabled", "type": "Pro", "status": "disabled"},
             ]
         )
         self.service.refresh_access_token = lambda token, **_kwargs: token

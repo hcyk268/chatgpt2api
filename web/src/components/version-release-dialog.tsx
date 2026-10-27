@@ -15,10 +15,12 @@ import { useVersionCheck } from "@/hooks/use-version-check";
 import { cn } from "@/lib/utils";
 
 function typeVariant(type: string): "success" | "danger" | "info" | "violet" | "outline" {
-  if (type === "新增") return "success";
-  if (type === "修复") return "danger";
-  if (type === "调整") return "info";
-  if (type === "文档") return "violet";
+  if (type === "Added") return "success";
+  if (type === "Fixed") return "danger";
+  if (type === "Changed") return "info";
+  if (type === "Docs") return "violet";
+  if (type === "Improved") return "success";
+  if (type === "Removed") return "outline";
   return "outline";
 }
 
@@ -43,7 +45,7 @@ export function VersionReleaseDialog({ className }: { className?: string }) {
           className,
         )}
         onClick={openReleaseModal}
-        title="查看版本更新"
+        title="View release notes"
       >
         v{webConfig.appVersion}
         {hasNewVersion ? (
@@ -53,12 +55,12 @@ export function VersionReleaseDialog({ className }: { className?: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[min(94vw,680px)] rounded-2xl">
           <DialogHeader>
-            <DialogTitle>版本更新</DialogTitle>
+            <DialogTitle>Release notes</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <VersionCard label="当前版本" value={webConfig.appVersion} />
+            <VersionCard label="Current version" value={webConfig.appVersion} />
             <VersionCard
-              label="最新版本"
+              label="Latest version"
               value={latestVersion}
               action={
                 <button
@@ -66,7 +68,7 @@ export function VersionReleaseDialog({ className }: { className?: string }) {
                   className="text-[11px] text-stone-400 underline-offset-2 hover:text-stone-700 hover:underline dark:hover:text-stone-200"
                   onClick={() => void checkLatestRelease(true)}
                 >
-                  {checking ? "检查中..." : "检查更新"}
+                  {checking ? "Checking..." : "Check for updates"}
                 </button>
               }
             />
@@ -76,11 +78,11 @@ export function VersionReleaseDialog({ className }: { className?: string }) {
               <div key={release.version} className="border-l border-stone-200 pl-4 dark:border-white/10">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-stone-950 dark:text-stone-100">
-                    {release.version === "Unreleased" ? "未发布" : release.version}
+                    {release.version === "Unreleased" ? "Unreleased" : release.version}
                   </span>
                   <span className="text-xs text-stone-500 dark:text-stone-400">{release.date}</span>
-                  {release.version === latestVersion ? <Badge variant="success">最新</Badge> : null}
-                  {release.version === webConfig.appVersion ? <Badge variant="outline">当前</Badge> : null}
+                  {release.version === latestVersion ? <Badge variant="success">Latest</Badge> : null}
+                  {release.version === webConfig.appVersion ? <Badge variant="outline">Current</Badge> : null}
                 </div>
                 <div className="mt-2 space-y-1.5">
                   {release.items.map((item, index) => (
@@ -97,7 +99,7 @@ export function VersionReleaseDialog({ className }: { className?: string }) {
           </div>
           <Button variant="outline" size="sm" asChild>
             <a href="https://github.com/basketikun/chatgpt2api" target="_blank" rel="noreferrer">
-              前往 GitHub 更新
+              Update on GitHub
             </a>
           </Button>
         </DialogContent>

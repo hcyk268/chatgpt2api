@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 import time
+from urllib.parse import urlsplit
 
 from services.storage.base import StorageBackend
 
@@ -36,6 +37,47 @@ DEFAULT_IMAGE_STORAGE = {
     "webdav_root_path": "chatgpt2api/images",
     "public_base_url": "",
 }
+
+DEFAULT_IMAGE_R2 = {
+    "enabled": False,
+    "account_id": "",
+    "access_key_id": "",
+    "secret_access_key": "",
+    "bucket": "",
+    "prefix": "chatgpt2api/images",
+    "public_base_url": "",
+}
+
+
+def _normalize_image_r2_settings(value: object) -> dict[str, object]:
+    source = value if isinstance(value, dict) else {}
+    settings = {
+        key: str(source.get(key) or default).strip()
+        for key, default in DEFAULT_IMAGE_R2.items() if key != "enabled"
+    }
+    settings["enabled"] = _normalize_bool(source.get("enabled"), False)
+    settings["prefix"] = settings["prefix"].strip("/") or DEFAULT_IMAGE_R2["prefix"]
+    settings["public_base_url"] = settings["public_base_url"].rstrip("/")
+    return settings
+
+
+def _validate_image_r2_settings(settings: dict[str, object]) -> None:
+    if not settings.get("enabled"):
+        return
+    for key in ("account_id", "access_key_id", "secret_access_key", "bucket", "public_base_url"):
+        if not settings.get(key):
+            raise ValueError(f"image_r2.{key} is required when R2 image upload is enabled")
+    prefix = str(settings["prefix"])
+    if any(part in {"", ".", ".."} for part in prefix.split("/")) or any(
+        not (char.isascii() and (char.isalnum() or char in "-_/")) for char in prefix
+    ):
+        raise ValueError("image_r2.prefix must be a non-empty path using letters, numbers, /, - or _")
+    url = urlsplit(str(settings["public_base_url"]))
+    if (url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password
+            or url.query or url.fragment or url.path not in {"", "/"}
+            or url.hostname.endswith("r2.cloudflarestorage.com")):
+        raise ValueError("image_r2.public_base_url must be the public bucket origin (custom domain or r2.dev), not the S3 endpoint")
+
 
 DEFAULT_CHAT_COMPLETION_CACHE = {
     "enabled": True,
@@ -291,9 +333,9 @@ def _validate_image_storage_settings(settings: dict[str, object]) -> None:
     if not _normalize_bool(settings.get("enabled"), False):
         return
     if not str(settings.get("webdav_url") or "").strip():
-        raise ValueError("启用 WebDAV 图片存储后必须填写 WebDAV URL")
+        raise ValueError("WebDAV URL is required when WebDAV image storage is enabled")
     if not str(settings.get("webdav_password") or "").strip():
-        raise ValueError("启用 WebDAV 图片存储后必须填写 WebDAV 密码")
+        raise ValueError("WebDAV password is required when WebDAV image storage is enabled")
 
 
 @dataclass(frozen=True)
@@ -332,8 +374,8 @@ def _load_settings() -> LoadedSettings:
     auth_key = _normalize_auth_key(os.getenv("CHATGPT2API_AUTH_KEY") or raw_config.get("auth-key"))
     if _is_invalid_auth_key(auth_key):
         raise ValueError(
-            "❌ auth-key 未设置！\n"
-            "请在环境变量 CHATGPT2API_AUTH_KEY 中设置，或者在 config.json 中填写 auth-key。"
+            "auth-key is not set.\n"
+            "Set CHATGPT2API_AUTH_KEY or add auth-key to config.json."
         )
 
     try:
@@ -355,11 +397,11 @@ class ConfigStore:
         self._storage_backend: StorageBackend | None = None
         if _is_invalid_auth_key(self.auth_key):
             raise ValueError(
-                "❌ auth-key 未设置！\n"
-                "请按以下任意一种方式解决：\n"
-                "1. 在 Render 的 Environment 变量中添加：\n"
+                "auth-key is not set.\n"
+                "Fix it in either way:\n"
+                "1. Add to Render Environment:\n"
                 "   CHATGPT2API_AUTH_KEY = your_real_auth_key\n"
-                "2. 或者在 config.json 中填写：\n"
+                "2. Or in config.json:\n"
                 '   "auth-key": "your_real_auth_key"'
             )
 
@@ -431,7 +473,7 @@ class ConfigStore:
 
     @property
     def image_settle_enabled(self) -> bool:
-        """图片二次确认机制：找到 file_ids 后等待一段时间再次确认。"""
+        """Image settle: wait and re-check after file_ids appear."""
         value = self.data.get("image_settle_enabled", True)
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "on"}
@@ -439,7 +481,7 @@ class ConfigStore:
 
     @property
     def image_check_before_hit_enabled(self) -> bool:
-        """先check再hit：通过轮询确认 file_ids 存在后再返回，而非仅依赖 SSE 事件。"""
+        """Check-before-hit: poll until file_ids exist instead of trusting SSE alone."""
         value = self.data.get("image_check_before_hit_enabled", True)
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "on"}
@@ -447,7 +489,7 @@ class ConfigStore:
 
     @property
     def image_remove_conversation_after_result(self) -> bool:
-        """出图成功后异步隐藏 ChatGPT 本地对话记录。"""
+        """After successful image gen, hide ChatGPT local conversation asynchronously."""
         value = self.data.get("image_remove_conversation_after_result", False)
         if isinstance(value, str):
             return value.strip().lower() in {"1", "true", "yes", "on"}
@@ -455,12 +497,12 @@ class ConfigStore:
 
     @property
     def image_remove_conversation_always(self) -> bool:
-        """无论是否出图，画图请求结束后都异步隐藏 ChatGPT 本地对话记录。"""
+        """After any image request, hide ChatGPT local conversation asynchronously."""
         return _normalize_bool(self.data.get("image_remove_conversation_always"), False)
 
     @property
     def image_settle_secs(self) -> float:
-        """二次确认等待时间（秒）。"""
+        """Settle wait time in seconds."""
         try:
             return max(0.5, float(self.data.get("image_settle_secs", 2.0)))
         except (TypeError, ValueError):
@@ -582,6 +624,7 @@ class ConfigStore:
         data["default_thinking_effort"] = self.default_thinking_effort
         data["backup"] = self.get_backup_settings()
         data["image_storage"] = self.get_image_storage_settings()
+        data["image_r2"] = self.get_image_r2_settings()
         data["chat_completion_cache"] = self.get_chat_completion_cache_settings()
         data["proxy_runtime"] = self.get_public_proxy_runtime_settings()
         data["third_party_apps"] = self.get_third_party_apps_settings()
@@ -612,6 +655,9 @@ class ConfigStore:
     def update(self, data: dict[str, object]) -> dict[str, object]:
         next_data = dict(self.data)
         next_data.update(dict(data or {}))
+        if "image_r2" in next_data:
+            next_data["image_r2"] = _normalize_image_r2_settings(next_data.get("image_r2"))
+            _validate_image_r2_settings(next_data["image_r2"])
         if "backup" in next_data:
             next_data["backup"] = _normalize_backup_settings(next_data.get("backup"))
         if "image_storage" in next_data:
@@ -643,11 +689,14 @@ class ConfigStore:
     def get_image_storage_settings(self) -> dict[str, object]:
         return _normalize_image_storage_settings(self.data.get("image_storage"))
 
+    def get_image_r2_settings(self) -> dict[str, object]:
+        return _normalize_image_r2_settings(self.data.get("image_r2"))
+
     def get_chat_completion_cache_settings(self) -> dict[str, object]:
         return _normalize_chat_completion_cache_settings(self.data.get("chat_completion_cache"))
 
     def get_storage_backend(self) -> StorageBackend:
-        """获取存储后端实例（单例）"""
+        """Return storage backend singleton instance."""
         if self._storage_backend is None:
             from services.storage.factory import create_storage_backend
             self._storage_backend = create_storage_backend(DATA_DIR)

@@ -1,6 +1,6 @@
-"""OpenAI Sentinel Token (PoW) 生成与请求工具函数。
+"""OpenAI Sentinel Token (PoW) generation and request helpers.
 
-用于密码登录、注册等需要 sentinel token 的流程。
+Used for password login, registration, and other flows that require a sentinel token.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class SentinelTokenGenerator:
-    """Sentinel Token 生成器（PoW - Proof of Work）。"""
+    """Sentinel token generator (PoW — Proof of Work)."""
     MAX_ATTEMPTS = 500_000
     ERROR_PREFIX = "wQ8Lk5FbGpA2NcR9dShT6gYjU7VxZ4D"
 
@@ -84,7 +84,7 @@ class SentinelTokenGenerator:
         return "gAAAAAB" + self.ERROR_PREFIX + self._b64(str(None))
 
 
-# ── 默认 User-Agent 和 sec-ch-ua ──────────────────────────────
+# Default User-Agent and sec-ch-ua
 DEFAULT_SENTINEL_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -101,20 +101,20 @@ def build_sentinel_token(
     user_agent: str = "",
     sec_ch_ua: str = "",
 ) -> tuple[str, str]:
-    """请求 sentinel token 并返回 (sentinel_header_value, oai_sc_cookie_value)。
+    """Request a sentinel token and return (sentinel_header_value, oai_sc_cookie_value).
 
     Args:
-        session: curl_cffi Session 实例
-        device_id: 设备 ID
-        flow: 流程标识（如 "password_verify", "username_password_create" 等）
-        user_agent: 可选的 User-Agent 覆盖
-        sec_ch_ua: 可选的 sec-ch-ua 覆盖
+        session: curl_cffi Session instance
+        device_id: Device ID
+        flow: Flow identifier (e.g. "password_verify", "username_password_create")
+        user_agent: Optional User-Agent override
+        sec_ch_ua: Optional sec-ch-ua override
 
     Returns:
-        (openai-sentinel-token header value, oai-sc cookie value) 元组
+        (openai-sentinel-token header value, oai-sc cookie value) tuple
 
     Raises:
-        RuntimeError: sentinel 请求失败
+        RuntimeError: sentinel request failed
     """
     ua = user_agent or DEFAULT_SENTINEL_USER_AGENT
     ch_ua = sec_ch_ua or DEFAULT_SENTINEL_SEC_CH_UA

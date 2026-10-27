@@ -20,15 +20,15 @@ class AccountCapabilityTests(unittest.TestCase):
     def test_image_accounts_require_positive_quota(self) -> None:
         self.assertFalse(
             AccountService._is_image_account_available(
-                {"status": "限流", "quota": 1}
+                {"status": "rate_limited", "quota": 1}
             )
         )
         self.assertFalse(
             AccountService._is_image_account_available(
-                {"status": "正常", "quota": 0}
+                {"status": "ok", "quota": 0}
             )
         )
-        self.assertTrue(AccountService._is_image_account_available({"status": "正常", "quota": 1}))
+        self.assertTrue(AccountService._is_image_account_available({"status": "ok", "quota": 1}))
 
     def test_prolite_variants_are_normalized(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -57,7 +57,7 @@ class AccountCapabilityTests(unittest.TestCase):
             service.update_account(
                 "token-1",
                 {
-                    "status": "正常",
+                    "status": "ok",
                     "quota": 1,
                 },
             )
@@ -66,7 +66,7 @@ class AccountCapabilityTests(unittest.TestCase):
 
             self.assertIsNotNone(updated)
             self.assertEqual(updated["quota"], 0)
-            self.assertEqual(updated["status"], "限流")
+            self.assertEqual(updated["status"], "rate_limited")
 
     def test_split_image_model_supports_plan_type_prefix(self) -> None:
         self.assertEqual(split_image_model("gpt-image-2"), (None, "gpt-image-2"))
@@ -81,8 +81,8 @@ class AccountCapabilityTests(unittest.TestCase):
             service = AccountService(JSONStorageBackend(Path(tmp_dir) / "accounts.json"))
             service.add_account_items(
                 [
-                    {"access_token": "token-plus", "type": "Plus", "status": "正常", "quota": 3},
-                    {"access_token": "token-pro", "type": "Pro", "status": "正常", "quota": 3},
+                    {"access_token": "token-plus", "type": "Plus", "status": "ok", "quota": 3},
+                    {"access_token": "token-pro", "type": "Pro", "status": "ok", "quota": 3},
                 ]
             )
 
@@ -102,7 +102,7 @@ class AccountCapabilityTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 service = AccountService(JSONStorageBackend(Path(tmp_dir) / "accounts.json"))
-                service.add_account_items([{"access_token": "invalid-token", "status": "正常"}])
+                service.add_account_items([{"access_token": "invalid-token", "status": "ok"}])
 
                 with patch(
                     "services.openai_backend_api.OpenAIBackendAPI.get_user_info",
@@ -126,7 +126,7 @@ class AccountCapabilityTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 service = AccountService(JSONStorageBackend(Path(tmp_dir) / "accounts.json"))
-                service.add_account_items([{"access_token": "invalid-token", "status": "正常"}])
+                service.add_account_items([{"access_token": "invalid-token", "status": "ok"}])
 
                 with patch(
                     "services.openai_backend_api.OpenAIBackendAPI.get_user_info",
@@ -218,10 +218,10 @@ class AuthServiceTests(unittest.TestCase):
             first, _ = service.create_key(role="user", name="Alice")
             second, _ = service.create_key(role="user", name="Bob")
 
-            with self.assertRaisesRegex(ValueError, "这个名称已经在使用中了"):
+            with self.assertRaisesRegex(ValueError, "already in use"):
                 service.create_key(role="user", name="Alice")
 
-            with self.assertRaisesRegex(ValueError, "这个名称已经在使用中了"):
+            with self.assertRaisesRegex(ValueError, "already in use"):
                 service.update_key(second["id"], {"name": "Alice"}, role="user")
 
             updated = service.update_key(first["id"], {"name": "Alice"}, role="user")

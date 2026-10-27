@@ -1,44 +1,44 @@
-# 功能状态
+# Feature status
 
-本文基于当前仓库当前实现整理，用于帮助用户快速了解哪些功能已经可用、哪些仍在完善、哪些待实现。
+This document reflects the current repository implementation to help you see what is available, in progress, or not yet implemented.
 
-| 功能 | 状态 | 说明 |
+| Feature | Status | Notes |
 |:----------------------------------------|:--:|:--------------------------------------------------------------|
-| OpenAI 兼容 `POST /v1/images/generations` | ✅  | 已支持，用于图片生成，并可通过 `n` 返回多张图片。 |
-| OpenAI 兼容 `POST /v1/images/edits` | ✅  | 已支持，可上传图片进行编辑。 |
-| 面向图片工作流的 `POST /v1/chat/completions` | ✅  | 已支持图片相关请求。 |
-| 面向图片工作流的 `POST /v1/responses` | ✅  | 已支持图片生成工具调用。 |
-| `GET /v1/models` 接口 | ✅  | 当前返回 `gpt-image-2`、`codex-gpt-image-2`、`auto`、`gpt-5`、`gpt-5-1`、`gpt-5-2`、`gpt-5-3`、`gpt-5-3-mini`、`gpt-5-mini`。 |
-| 同时生成多张图片 | ✅  | 已支持，后端与前端都可进行多图生成。 |
-| 图片并行生成 | ✅  | 多张图片使用独立线程和账号同时生成，可通过 `image_parallel_generation` 配置关闭。 |
-| 图片生成进度追踪 | ✅  | 任务显示当前步骤（上传/预热/获取token/生成中等），支持耗时统计。 |
-| 图片超时续轮询 | ✅  | 超时任务可继续等待，前端显示"继续等待"按钮，后端 resume-poll API。 |
-| 图片二次确认与先check再hit | ✅  | 可通过 `image_settle_enabled` 和 `image_check_before_hit_enabled` 配置，关闭后跳过等待直接返回。 |
-| 前端图片工作台 | ✅  | 已支持图片生成、图片编辑、模型选择、历史记录与查看大图。 |
-| 前端图片懒加载与滚动优化 | ✅  | LazyImage 懒加载、会话切换滚动位置保存与恢复、bfcache 页面恢复同步。 |
-| 前端图片输入 / 参考图交互 | ✅  | 已支持参考图上传、预览、移除和编辑模式工作流。 |
-| Codex 画图接口逆向 | ✅  | 已支持，仅 `Plus` / `Team` / `Pro` 订阅可用，模型别名为 `codex-gpt-image-2`；如有需要可自行在其他场景映射回 `gpt-image-2`。这是 Codex 逆向链路，用于和官网画图区分，同一账号通常会同时支持官网和 Codex 两份生图额度。 |
-| Cherry Studio 接入 | ✅  | 已支持作为绘图接口接入 Cherry Studio。 |
-| New API 接入 | ✅  | 已支持接入 New API。 |
-| 账号池管理 | ✅  | 已支持列表、筛选、批量操作、导出、手动编辑、刷新和删除。 |
-| 账号刷新异步进度追踪 | ✅  | 刷新和重新登录改为异步模式，前端轮询显示进度。 |
-| 密码重新登录恢复异常账号 | ✅  | 号池管理页面支持重新登录，刷新后可自动重登异常账号。 |
-| 账号额度刷新与恢复时间同步 | ✅  | 已支持账号信息刷新，限流账号也会自动继续检查。 |
-| 失效 Token 自动清理 | ✅  | 已支持自动移除失效 Token。 |
-| CPA 连接管理 | ✅  | 已支持 CPA 连接的新增、修改、查询和删除。 |
-| CPA 文件浏览与按需导入 | ✅  | 已支持读取远程文件列表、筛选、勾选并导入到本地号池。 |
-| CPA 导入进度跟踪 | ✅  | 已支持导入进度展示与轮询更新。 |
-| `sub2api` 连接管理与账号浏览 | ✅  | 已支持 `sub2api` 服务器的新增、修改、删除、分组查询和 OpenAI OAuth 账号列表读取。 |
-| `sub2api` 导入 | ✅  | 已支持勾选 `sub2api` 中的 OpenAI OAuth 账号，批量拉取 `access_token` 导入本地号池，并展示导入进度。 |
-| Docker 自托管部署 | ✅  | 已支持 Docker Compose 部署，并提供多架构镜像。 |
-| 兼容接口中的多参考图能力 | ✅  | 已实现，支持在兼容接口中传入多参考图。 |
-| 更高级的 Token 调度策略 | ⚠️ | 当前已有基础轮询与限流刷新机制，更复杂的调度策略仍在完善中。 |
-| Render / Vercel 等部署表述 | ⚠️ | 当前主要以 Docker 部署为主，其他平台部署方式暂未重点说明。 |
-| `/v1/complete` 文本补全与流式输出 | ✅  | 已实现。 |
-| 流式输出支持 | ✅  | 已实现。 |
-| 文本补全缓存与重复请求合并 | ✅  | `/v1/chat/completions` 文本链路默认启用 60 秒短缓存、流式结果回放、in-flight 请求合并和相邻重复消息清理；可通过 `chat_completion_cache` 配置关闭或调整。 |
-| 图片尺寸参数 | ❌  | 待实现。 |
-| 服务端图片 URL 缓存 | ✅  | 已实现。 |
-| `rt_token` 刷新 | ❌  | 待实现。 |
-| 代理配置功能 | ✅  | 已支持网页端配置全局 HTTP / HTTPS / SOCKS5 / SOCKS5H 代理，并应用到出站请求。 |
-| Anthropic 协议支持 | ❌  | 待实现。 |
+| OpenAI-compatible `POST /v1/images/generations` | ✅  | Supported for image generation; multiple images via `n`. |
+| OpenAI-compatible `POST /v1/images/edits` | ✅  | Supported; upload images for editing. |
+| Image workflow `POST /v1/chat/completions` | ✅  | Supported for image-related requests. |
+| Image workflow `POST /v1/responses` | ✅  | Supported for image generation tool calls. |
+| `GET /v1/models` | ✅  | Returns `gpt-image-2`, `codex-gpt-image-2`, `auto`, `gpt-5`, `gpt-5-1`, `gpt-5-2`, `gpt-5-3`, `gpt-5-3-mini`, `gpt-5-mini`. |
+| Generate multiple images at once | ✅  | Backend and frontend multi-image generation. |
+| Parallel image generation | ✅  | Separate threads and accounts per image; disable via `image_parallel_generation`. |
+| Image generation progress | ✅  | Steps (upload/warm-up/token fetch/generating, etc.) with timing. |
+| Continue polling after timeout | ✅  | Continue waiting in UI; backend resume-poll API. |
+| Image settle and check-before-hit | ✅  | Configure with `image_settle_enabled` and `image_check_before_hit_enabled`; skip wait when disabled. |
+| Frontend image studio | ✅  | Generation, editing, model selection, history, lightbox. |
+| Lazy load and scroll optimization | ✅  | LazyImage, scroll restore on session switch, bfcache sync. |
+| Reference image input | ✅  | Upload, preview, remove, edit workflow. |
+| Codex image path | ✅  | `Plus` / `Team` / `Pro` only; alias `codex-gpt-image-2`; map to `gpt-image-2` if needed. Separate from web image gen; same account often has both quotas. |
+| Cherry Studio integration | ✅  | Image API for Cherry Studio. |
+| New API integration | ✅  | New API compatible. |
+| Account pool management | ✅  | List, filter, batch ops, export, edit, refresh, delete. |
+| Async refresh progress | ✅  | Refresh and re-login async with frontend polling. |
+| Password re-login for errored accounts | ✅  | Re-login on pool page; optional auto re-login after refresh. |
+| Quota refresh and recovery time | ✅  | Account refresh; rate-limited accounts rechecked. |
+| Invalid token cleanup | ✅  | Auto-remove invalid tokens. |
+| CPA connection management | ✅  | CRUD for CPA connections. |
+| CPA file browse and import | ✅  | Remote file list, filter, select, import to local pool. |
+| CPA import progress | ✅  | Progress UI and polling. |
+| `sub2api` connections and browse | ✅  | CRUD, groups, OpenAI OAuth account lists. |
+| `sub2api` import | ✅  | Select OAuth accounts, batch `access_token` import, progress. |
+| Docker self-hosting | ✅  | Docker Compose; multi-arch images. |
+| Multiple reference images in compatible APIs | ✅  | Multi reference images in compatible endpoints. |
+| Advanced token scheduling | ⚠️ | Basic round-robin and rate-limit refresh; richer scheduling in progress. |
+| Render / Vercel deployment docs | ⚠️ | Docker-first; other platforms not fully documented. |
+| `/v1/complete` text completion and streaming | ✅  | Implemented. |
+| Streaming output | ✅  | Implemented. |
+| Chat completion cache and deduplication | ✅  | `/v1/chat/completions` text: 60s cache, stream replay, in-flight merge, adjacent duplicate cleanup; configure via `chat_completion_cache`. |
+| Image size parameters | ❌  | Not implemented. |
+| Server-side image URL cache | ✅  | Implemented. |
+| `rt_token` refresh | ❌  | Not implemented. |
+| Proxy configuration | ✅  | Global HTTP / HTTPS / SOCKS5 / SOCKS5H in web UI for outbound requests. |
+| Anthropic protocol | ❌  | Not implemented. |

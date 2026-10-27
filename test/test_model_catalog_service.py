@@ -55,11 +55,11 @@ class ModelCatalogServiceTests(unittest.TestCase):
         )
         self.accounts.add_account_items(
             [
-                {"access_token": "free-bad", "type": "free", "status": "正常"},
-                {"access_token": "free-good", "type": "FREE", "status": "正常"},
-                {"access_token": "plus", "type": "Plus", "status": "正常"},
-                {"access_token": "pro", "type": "pro", "status": "正常"},
-                {"access_token": "team-disabled", "type": "Team", "status": "禁用"},
+                {"access_token": "free-bad", "type": "free", "status": "ok"},
+                {"access_token": "free-good", "type": "FREE", "status": "ok"},
+                {"access_token": "plus", "type": "Plus", "status": "ok"},
+                {"access_token": "pro", "type": "pro", "status": "ok"},
+                {"access_token": "team-disabled", "type": "Team", "status": "disabled"},
             ]
         )
         self.accounts.refresh_access_token = lambda token, **_kwargs: token

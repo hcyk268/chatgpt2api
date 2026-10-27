@@ -73,7 +73,7 @@ async def filter_or_log(call: LoggedCall, text: str) -> None:
     try:
         await run_in_threadpool(check_request, text)
     except HTTPException as exc:
-        call.log("调用失败", status="failed", error=str(exc.detail))
+        call.log("Request failed", status="failed", error=str(exc.detail))
         raise
 
 
@@ -97,7 +97,7 @@ def create_router() -> APIRouter:
         identity = require_identity(authorization)
         payload = body.model_dump(mode="python")
         payload["base_url"] = resolve_image_base_url(request)
-        call = LoggedCall(identity, "/v1/images/generations", body.model, "文生图", request_text=body.prompt)
+        call = LoggedCall(identity, "/v1/images/generations", body.model, "Text-to-image", request_text=body.prompt)
         await filter_or_log(call, body.prompt)
         return await call.run(openai_v1_image_generations.handle, payload)
 
@@ -110,7 +110,7 @@ def create_router() -> APIRouter:
         payload, image_sources, mask_sources = await parse_image_edit_request(request)
         prompt = str(payload["prompt"])
         model = str(payload["model"])
-        call = LoggedCall(identity, "/v1/images/edits", model, "图生图", request_text=prompt)
+        call = LoggedCall(identity, "/v1/images/edits", model, "Image edit", request_text=prompt)
         await filter_or_log(call, prompt)
         payload["images"] = await read_image_sources(image_sources)
         if mask_sources:
@@ -128,7 +128,7 @@ def create_router() -> APIRouter:
             identity,
             "/v1/chat/completions",
             model,
-            "文本生成",
+            "Text generation",
             request_text=request_preview,
             request_shape=request_shape(payload.get("messages")),
         )
@@ -170,7 +170,7 @@ def create_router() -> APIRouter:
     @router.post("/v1/search")
     async def search(body: SearchRequest, authorization: str | None = Header(default=None)):
         identity = require_identity(authorization)
-        call = LoggedCall(identity, "/v1/search", openai_search.MODEL, "搜索", request_text=body.prompt)
+        call = LoggedCall(identity, "/v1/search", openai_search.MODEL, "Search", request_text=body.prompt)
         await filter_or_log(call, body.prompt)
         return await call.run(openai_search.handle, body.model_dump(mode="python"))
 
@@ -191,7 +191,7 @@ def create_router() -> APIRouter:
     @router.post("/v1/ppt/generations")
     async def create_ppt_task(body: EditableFileTaskRequest, request: Request, authorization: str | None = Header(default=None)):
         identity = require_identity(authorization)
-        await filter_or_log(LoggedCall(identity, "/v1/ppt/generations", "gpt-5-5-thinking", "PPT生成任务", request_text=body.prompt), body.prompt)
+        await filter_or_log(LoggedCall(identity, "/v1/ppt/generations", "gpt-5-5-thinking", "PPT generation task", request_text=body.prompt), body.prompt)
         return await run_in_threadpool(
             editable_file_task_service.submit_ppt,
             identity,
@@ -204,7 +204,7 @@ def create_router() -> APIRouter:
     @router.post("/v1/psd/generations")
     async def create_psd_task(body: EditableFileTaskRequest, request: Request, authorization: str | None = Header(default=None)):
         identity = require_identity(authorization)
-        await filter_or_log(LoggedCall(identity, "/v1/psd/generations", "gpt-5-5-thinking", "PSD生成任务", request_text=body.prompt), body.prompt)
+        await filter_or_log(LoggedCall(identity, "/v1/psd/generations", "gpt-5-5-thinking", "PSD generation task", request_text=body.prompt), body.prompt)
         return await run_in_threadpool(
             editable_file_task_service.submit_psd,
             identity,

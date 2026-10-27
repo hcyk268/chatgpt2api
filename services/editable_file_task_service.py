@@ -57,7 +57,7 @@ def _editable_access_token() -> str:
     accounts = [
         item for item in account_service.list_accounts()
         if _clean(item.get("access_token"))
-           and item.get("status") not in {"禁用", "异常"}
+           and item.get("status") not in {"disabled", "error"}
            and account_service._account_matches_any_plan_type(item, EDITABLE_FILE_PLAN_TYPES)
     ]
     if not accounts:
@@ -213,7 +213,7 @@ class EditableFileTaskService:
         for task in self._tasks.values():
             if task.get("status") in UNFINISHED_STATUSES:
                 task["status"] = TASK_STATUS_ERROR
-                task["error"] = "服务已重启，未完成的任务已中断"
+                task["error"] = "Service restarted; unfinished task was interrupted"
                 task["ended_ts"] = time.time()
                 task["updated_at"] = _now_iso()
                 task["updated_ts"] = time.time()
@@ -252,7 +252,7 @@ class EditableFileTaskService:
         if result:
             detail["result"] = result
         try:
-            log_service.add(LOG_TYPE_CALL, f"{kind.upper()}生成任务{'失败' if status == 'failed' else '完成'}", detail)
+            log_service.add(LOG_TYPE_CALL, f"{kind.upper()} generation task {'failed' if status == 'failed' else 'completed'}", detail)
         except Exception:
             pass
 

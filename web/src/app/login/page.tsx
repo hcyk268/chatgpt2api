@@ -22,7 +22,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     const normalizedAuthKey = authKey.trim();
     if (!normalizedAuthKey) {
-      toast.error("请输入 密钥");
+      toast.error("Please enter an API key");
       return;
     }
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
       });
       router.replace(getDefaultRouteForRole(data.role));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "登录失败";
+      const message = error instanceof Error ? error.message : "Login failed";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -55,25 +55,27 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-[calc(100vh-1rem)] w-full place-items-center px-4 py-6">
       <HeaderActions className="fixed top-4 right-4 z-10" />
-      <Card className="w-full max-w-[505px] rounded-[30px] border-white/80 bg-white/95 shadow-[0_28px_90px_rgba(28,25,23,0.10)]">
-        <CardContent className="space-y-7 p-6 sm:p-8">
+      <Card className="w-full max-w-[460px] rounded-3xl border-stone-200/70 bg-white/95 shadow-[0_28px_90px_rgba(28,25,23,0.10)]">
+        <CardContent className="space-y-7 p-6 sm:p-9">
           <div className="space-y-4 text-center">
             <div className="mx-auto inline-flex size-14 items-center justify-center rounded-[18px] bg-stone-950 text-white shadow-sm">
               <LockKeyhole className="size-5" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-stone-950">欢迎回来</h1>
-              <p className="text-sm leading-6 text-stone-500">输入密钥后继续使用账号管理和图片生成功能。</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">chatgpt2api</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-stone-950">Welcome back</h1>
+              <p className="text-sm leading-6 text-stone-500">Sign in with your API key to open your workspace.</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <label htmlFor="auth-key" className="block text-sm font-medium text-stone-700">
-              密钥
+              API key
             </label>
             <Input
               id="auth-key"
               type="password"
+              autoComplete="current-password"
               value={authKey}
               onChange={(event) => setAuthKey(event.target.value)}
               onKeyDown={(event) => {
@@ -81,7 +83,7 @@ export default function LoginPage() {
                   void handleLogin();
                 }
               }}
-              placeholder="请输入密钥"
+              placeholder="Enter API key"
               className="h-13 rounded-2xl border-stone-200 bg-white px-4"
             />
           </div>
@@ -92,7 +94,7 @@ export default function LoginPage() {
             disabled={isSubmitting}
           >
             {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            登录
+            Sign in
           </Button>
         </CardContent>
       </Card>

@@ -7,7 +7,7 @@ from test.utils import BASE_URL, load_auth_key
 
 def main() -> None:
     payload = {
-        "prompt": "一只橘猫坐在窗台上，午后阳光，写实摄影",
+        "prompt": "An orange cat on a windowsill in afternoon sunlight, realistic photo",
         "model": "gpt-image-2",
         "n": 1,
         "response_format": "url",

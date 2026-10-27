@@ -458,10 +458,17 @@ def parse_image_count(raw_value: object) -> int:
 
 
 def build_chat_image_markdown_content(image_result: dict[str, object]) -> str:
+    from services.config import config
+
+    use_public_url = config.get_image_r2_settings()["enabled"]
     image_items = image_result.get("data") if isinstance(image_result.get("data"), list) else []
     markdown_images: list[str] = []
     for index, item in enumerate(image_items, start=1):
         if not isinstance(item, dict):
+            continue
+        url = str(item.get("url") or "").strip()
+        if use_public_url and url:
+            markdown_images.append(f"![image_{index}]({url})")
             continue
         b64_json = str(item.get("b64_json") or "").strip()
         if b64_json:

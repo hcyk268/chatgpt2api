@@ -252,7 +252,7 @@ def storage_stats() -> dict:
 
 
 def compress_images(quality: int = 60) -> dict:
-    """重新压缩所有图片，返回节省的空间"""
+    """Recompress all images; return bytes saved."""
     saved = 0
     count = 0
     for p in sorted(config.images_dir.rglob("*.png")):
@@ -276,7 +276,7 @@ def compress_images(quality: int = 60) -> dict:
 
 
 def delete_to_target(target_free_mb: int, dry_run: bool = False) -> dict:
-    """删除最旧的图片直到剩余空间达到 target_free_mb"""
+    """Delete oldest images until at least target_free_mb is free."""
     import shutil
     usage = shutil.disk_usage(config.images_dir)
     current_free = usage.free // (1024 * 1024)
@@ -350,13 +350,13 @@ def download_images_zip(paths: list[str]) -> io.BytesIO:
 
 
 def _auto_cleanup_worker(stop_event: threading.Event) -> None:
-    """后台线程：每30分钟检查存储，空间低于阈值自动清理最旧图片"""
+    """Background thread: every 30 minutes, evict oldest images if storage is low."""
     import shutil
     min_free_mb = getattr(config, "image_min_free_mb", None)
     if min_free_mb is None:
         min_free_mb = 500
 
-    while not stop_event.wait(1800):  # 每30分钟
+    while not stop_event.wait(1800):  # every 30 minutes
         try:
             config.cleanup_old_images()
             cleanup_image_thumbnails()

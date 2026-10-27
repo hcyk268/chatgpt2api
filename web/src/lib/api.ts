@@ -1,10 +1,20 @@
 import { httpRequest, request } from "@/lib/request";
 
 export type AccountType = string;
-export type AccountStatus = "正常" | "限流" | "异常" | "禁用";
+export type AccountStatus = "ok" | "rate_limited" | "error" | "disabled";
 export type ImageModel = string;
 export type AuthRole = "admin" | "user";
 export type ImageStorageMode = "local" | "webdav" | "both";
+
+export type ImageR2Settings = {
+  enabled: boolean;
+  account_id: string;
+  access_key_id: string;
+  secret_access_key: string;
+  bucket: string;
+  prefix: string;
+  public_base_url: string;
+};
 
 export type ImageStorageSettings = {
   enabled: boolean;
@@ -33,7 +43,7 @@ export type Account = {
   restore_at?: string | null;
   success: number;
   fail: number;
-  /** 当前图片在途数(正在生成、尚未结束的图片数)。号池空闲时持续 > 0 表示并发槽位泄漏。 */
+  /** In-flight image count (generating, not yet finished). If the pool is idle but this stays > 0, a concurrency slot may be leaking. */
   image_inflight?: number;
   last_used_at?: string | null;
   proxy?: string | null;
@@ -181,6 +191,7 @@ export type SettingsConfig = {
   auto_relogin_after_refresh?: boolean;
   log_levels?: string[];
   image_storage?: ImageStorageSettings;
+  image_r2?: ImageR2Settings;
   proxy_runtime?: ProxyRuntimeSettings;
   third_party_apps?: ThirdPartyAppsSettings;
   backup?: BackupSettings;
